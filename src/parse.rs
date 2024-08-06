@@ -25,4 +25,3 @@ pub mod sequence_provide {
 
     pub fn parse_request(data: &[u8]) -> Result<Request> { Ok(serde_json::from_slice(&data)?) }
 }
-
