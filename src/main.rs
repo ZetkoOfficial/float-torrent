@@ -1,7 +1,7 @@
 use tokio::net::{TcpListener, TcpStream};
 
 mod error; mod parse; mod http;
-use error::error::{Error, ErrorResponse, Result};
+use error::error::{Error, Result};
 use parse::sequence_provide;
 
 async fn route_example_provide(data: &[u8], stream: &mut TcpStream) -> Result<()> {
@@ -25,10 +25,7 @@ async fn main() -> Result<()>{
                 Ok((path, data)) => {
                     match path.as_str() {
                         "/example_provide" => route_example_provide(&data, &mut stream).await.unwrap(),
-                        _ => Error::MissingPath(ErrorResponse::new_with_extra(
-                            "Zahtevana pot nima routerja.",
-                            &format!(r#"{{"path": "{}"}}"#, path)
-                        )).send_error(&mut stream).await
+                        _ => Error::missing_path(&path).send_error(&mut stream).await
                     }
                 }
             }

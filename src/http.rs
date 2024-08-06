@@ -3,19 +3,22 @@ pub mod read {
 
     use crate::error::error::{Error, Result};
     
+    const MAX_HTTP_LENGTH: usize = 16384;
+
     pub async fn read_http(stream: &mut TcpStream) -> Result<(String, Vec<u8>)> {
-        let mut buffer = [0; 16384];  /* 16 kB max */
+
+        let mut buffer = [0; MAX_HTTP_LENGTH];  /* 16 kB max */
     
         let mut headers = [httparse::EMPTY_HEADER; 8];
         let mut request = httparse::Request::new(&mut headers);
     
         let read = stream.read(&mut buffer).await?;
         match request.parse(&buffer[..read])? {
-            httparse::Status::Partial => Err(Error::HttpRequestTooShort("HTTP request is too long".into())),
+            httparse::Status::Partial => Err(Error::http_too_long(&MAX_HTTP_LENGTH)),
             httparse::Status::Complete(offset) => {
                 let buffer = &buffer[offset..read];
                 match request.path {
-                    None => Err(Error::MissingPath("Specified path has no router".into())),
+                    None => Err(Error::missing_path("NULL")),
                     Some(path) => {
                         Ok((path.to_string(), buffer.to_vec()))
                     }
