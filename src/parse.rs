@@ -1,27 +1,70 @@
 pub mod sequence_provide {
-    use serde::Deserialize;
+    use serde::{Deserialize, Serialize};
     use crate::error::error::Result;
 
-    #[derive(Deserialize, Debug)]
-    struct Range {
-        from:   u64,
-        to:     u64,
-        step:   u64
+    use super::parse_helper::Sendable;
+
+    #[derive(Deserialize, Debug, Copy, Clone)]
+    pub struct Range {
+        pub from:   u64,
+        pub to:     u64,
+        pub step:   u64
     }
 
-    #[derive(Deserialize, Debug)]
-    struct SequenceParameter {
-        name: String, 
-        parameters: Vec<f64>,
-        sequences: Vec<SequenceParameter>
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct SequenceParameter {
+        pub name: String, 
+        pub parameters: Vec<f64>,
+        pub sequences: Vec<SequenceParameter>
     }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct SequenceInfo {
+        pub name: String,
+        pub description: String,
+        pub parameters: usize,
+        pub sequences: usize
+    }
+    impl Sendable for SequenceInfo {}
 
     #[derive(Deserialize, Debug)]
     pub struct Request {
-        range: Range,
-        parameters: Vec<f64>,
-        sequences: Vec<SequenceParameter>
+        pub range: Range,
+        pub parameters: Vec<f64>,
+        pub sequences: Vec<SequenceParameter>
+    }
+
+    impl Request {
+        pub fn get_info(&self, name: &str) -> SequenceInfo {
+            SequenceInfo {
+                name: name.to_owned(),
+                parameters: self.parameters.len(),
+                sequences: self.sequences.len(),
+                description: "".to_owned()
+            }
+        } 
+    }
+
+    impl SequenceParameter {
+        pub fn get_info(&self) -> SequenceInfo {
+            SequenceInfo {
+                name: self.name.to_owned(),
+                parameters: self.parameters.len(),
+                sequences: self.sequences.len(),
+                description: "".to_owned()
+            }
+        } 
     }
 
     pub fn parse_request(data: &[u8]) -> Result<Request> { Ok(serde_json::from_slice(&data)?) }
+}
+
+pub mod parse_helper {
+    use crate::error::error::Result;
+
+    pub trait Sendable : serde::Serialize {
+        fn as_sendable(&self) -> Result<Vec<u8>> {
+            Ok(serde_json::to_vec_pretty(&self)?)
+        }
+    }
 }

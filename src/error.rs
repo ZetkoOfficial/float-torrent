@@ -4,7 +4,7 @@ pub mod error {
     use serde::Serialize;
     use tokio::net::TcpStream;
 
-    use crate::http;
+    use crate::{http, parse::{parse_helper::Sendable, sequence_provide}};
 
     #[derive(Debug, Serialize)]
     #[allow(dead_code)]
@@ -14,6 +14,7 @@ pub mod error {
         SerdeError,
         HttpRequestTooShort,
         MissingPath,
+        MissingProvider,
     }
 
     #[derive(Debug, Serialize)]
@@ -53,11 +54,8 @@ pub mod error {
         }
     }
 
+    impl Sendable for Error {}
     impl Error {
-        fn as_sendable(&self) -> Result<Vec<u8>> {
-            Ok(serde_json::to_vec_pretty(&self)?)
-        }
-
         pub fn missing_path(path: &str) -> Self {
             Error { 
                 error_type: ErrorType::MissingPath, 
@@ -74,6 +72,16 @@ pub mod error {
                 message: "HTTP request je predolg".to_owned(), 
                 extra: Some(
                     serde_json::from_str(&format!(r#" {{"max_length": "{max_length}"}} "#)).unwrap()
+                ) 
+            }
+        }
+
+        pub fn missing_provider(seq: &sequence_provide::SequenceInfo) -> Self {
+            Error { 
+                error_type: ErrorType::MissingProvider, 
+                message: "Ponudnik zaporedja ni najden".to_owned(), 
+                extra: Some(
+                    serde_json::to_value(seq).unwrap()
                 ) 
             }
         }
