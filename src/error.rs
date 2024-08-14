@@ -15,6 +15,7 @@ pub mod error {
         HttpRequestTooShort,
         MissingPath,
         MissingProvider,
+        SequenceArithmeticError,
     }
 
     #[derive(Debug, Serialize)]
@@ -82,6 +83,16 @@ pub mod error {
                 message: "Ponudnik zaporedja ni najden".to_owned(), 
                 extra: Some(
                     serde_json::to_value(seq).unwrap()
+                ) 
+            }
+        }
+
+        pub fn sequence_arithmetic_error(extra: &str) -> Self {
+            Error { 
+                error_type: ErrorType::SequenceArithmeticError, 
+                message: "Napaka pri računanju členov".to_owned(), 
+                extra: Some(
+                    serde_json::Value::String(extra.to_owned())
                 ) 
             }
         }

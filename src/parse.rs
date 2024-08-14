@@ -18,7 +18,7 @@ pub mod sequence_provide {
         pub sequences: Vec<SequenceParameter>
     }
 
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct SequenceInfo {
         pub name: String,
         pub description: String,

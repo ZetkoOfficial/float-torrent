@@ -1,15 +1,21 @@
+use std::vec;
+
 use crate::{error::error::{Error, Result}, parse::sequence_provide::{self, SequenceInfo}};
 use async_trait::async_trait;
+use tokio::sync::RwLock;
+
+pub mod operation;
+use operation::{SumSequence, ProductSequence, OperationSequenceProvider};
 
 #[async_trait]
 pub trait SequenceProvider : Sync {
     fn get_info(&self) -> sequence_provide::SequenceInfo;
     fn generate(&self, range: sequence_provide::Range, parameters: &[f64], sequences: &[Vec<f64>]) -> Result<Vec<f64>>;
 
-    async fn provide(&self, request: sequence_provide::Request, manager: &ProviderManager) -> Result<Vec<f64>> {
+    async fn provide(&self, request: sequence_provide::Request, manager: &RwLock<ProviderManager>) -> Result<Vec<f64>> {
         let mut sequences = vec![];
         for seq in &request.sequences {
-            let result = manager.find(&seq.get_info()).ok_or(Error::missing_provider(&seq.get_info()))?.provide(
+            let result = manager.read().await.find(&seq.get_info()).ok_or(Error::missing_provider(&seq.get_info()))?.provide(
                 sequence_provide::Request { range: request.range, parameters: seq.parameters.clone(), sequences: seq.sequences.clone() },
                 &manager
             ).await?;
@@ -28,6 +34,8 @@ impl ProviderManager {
         ProviderManager { 
             providers: (vec! [
                 Box::new(ConstantSequenceProvider {}),
+                Box::new(OperationSequenceProvider::new(Box::new(SumSequence {}))),
+                Box::new(OperationSequenceProvider::new(Box::new(ProductSequence {}))),
             ])
         }
     }
@@ -44,8 +52,9 @@ impl ProviderManager {
     }
 }
 
-struct ConstantSequenceProvider {}
+// ---------- implementacije nekaj posebnih primerov ----------
 
+struct ConstantSequenceProvider {}
 impl SequenceProvider for ConstantSequenceProvider {
     fn generate(&self, range: sequence_provide::Range, parameters: &[f64], _sequences: &[Vec<f64>]) -> Result<Vec<f64>> {
         let mut result = vec![];
@@ -66,4 +75,3 @@ impl SequenceProvider for ConstantSequenceProvider {
         }
     }
 }
-
