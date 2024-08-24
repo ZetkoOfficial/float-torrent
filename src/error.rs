@@ -97,6 +97,14 @@ pub mod error {
             }
         }
 
+        pub fn http_missing_response() -> Self {
+            Error { 
+                error_type: ErrorType::HttpParseError, 
+                message: "Manjkajoč reason/code pri response-u.".to_owned(), 
+                extra: None 
+            }
+        }
+
         // če je mogoče vrne error, drugače samo preskočimo
         pub async fn send_error(self, stream: &mut TcpStream) {
             http::write::write_http("400 Bad Request", &self.as_sendable().unwrap_or_default(), stream).await.unwrap_or_default()

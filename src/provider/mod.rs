@@ -1,9 +1,9 @@
 use std::vec;
 
-use crate::{error::error::{Error, Result}, parse::sequence_provide::{self, SequenceInfo}};
+use crate::{error::error::{Error, Result}, http, parse::{parse_helper::Sendable, sequence_provide::{self, SequenceInfo}}};
 use async_trait::async_trait;
 use function::{ArithmeticSequence, FunctionSequenceProvider, GeometricSequence};
-use tokio::sync::RwLock;
+use tokio::{net::TcpStream, sync::RwLock};
 
 pub mod operation;
 use operation::{SumSequence, ProductSequence, OperationSequenceProvider};
@@ -28,32 +28,41 @@ pub trait SequenceProvider : Sync {
     }
 }
 pub struct ProviderManager {
-    providers: Vec<Box<dyn SequenceProvider + Send>>
+    local_providers:    Vec<Box<dyn SequenceProvider + Send>>,
+    remote_providers:   Vec<Box<dyn SequenceProvider + Send>>
 }
 
 impl ProviderManager {
     pub fn new() -> Self {
         ProviderManager { 
-            providers: (vec! [
+            local_providers: (vec! [
                 Box::new(ConstantSequenceProvider {}),
                 Box::new(DropSequenceProvider {}),
                 Box::new(OperationSequenceProvider::new(Box::new(SumSequence {}))),
                 Box::new(OperationSequenceProvider::new(Box::new(ProductSequence {}))),
                 Box::new(FunctionSequenceProvider::new(Box::new(ArithmeticSequence {}))),
                 Box::new(FunctionSequenceProvider::new(Box::new(GeometricSequence {}))),
-            ])
+            ]),
+            remote_providers: vec![]
         }
     }
 
     pub fn find(&self, seq: &SequenceInfo) -> Option<&Box<dyn SequenceProvider + Send>> {
-        self.providers.iter().filter(|provider| {
+        let local = self.local_providers.iter().filter(|provider| {
                 let info = provider.get_info();
                 info.parameters == seq.parameters && info.sequences == seq.sequences && info.name == seq.name
-        }).next()
+        }).next();
+        if local.is_some() { local }
+        else {
+            self.remote_providers.iter().filter(|provider| {
+                let info = provider.get_info();
+                info.parameters == seq.parameters && info.sequences == seq.sequences && info.name == seq.name
+            }).next()
+        }
     }
     
     pub fn get_info(&self) -> Vec<sequence_provide::SequenceInfo> {
-        self.providers.iter().map(|p| p.get_info()).collect()
+        self.local_providers.iter().map(|p| p.get_info()).collect()
     }
 }
 
@@ -85,7 +94,7 @@ struct DropSequenceProvider {}
 impl SequenceProvider for DropSequenceProvider {
     
     fn generate(&self,_:sequence_provide::Range,_: &[f64],_: &[Vec<f64>]) -> Result<Vec<f64> > {
-        panic!("Unreachable code")
+        panic!("Unreachable code!")
     }
 
     async fn provide(&self, request: sequence_provide::Request, manager: &RwLock<ProviderManager>) -> Result<Vec<f64>> {
@@ -113,5 +122,29 @@ impl SequenceProvider for DropSequenceProvider {
             parameters: 1,
             sequences: 1
         }
+    }
+}
+
+struct RemoteSequenceProvider {
+    host:   String,
+    info:   sequence_provide::SequenceInfo
+}
+
+#[async_trait]
+impl SequenceProvider for RemoteSequenceProvider {
+    fn generate(&self,_:sequence_provide::Range,_: &[f64],_: &[Vec<f64>]) -> Result<Vec<f64> > { panic!("Unreachable code!") }
+    fn get_info(&self) -> sequence_provide::SequenceInfo { self.info.clone() }
+
+    async fn provide(&self, request: sequence_provide::Request, _: &RwLock<ProviderManager>) -> Result<Vec<f64>> {
+        let endpoint = format!("/sequence/{}", self.info.name);
+        
+        let mut stream = TcpStream::connect(&self.host).await?; 
+        http::write::write_post_request(&self.host, &endpoint, &request.as_sendable()?, &mut stream).await?;
+        let (reason, status, data) = http::read::read_http_response(&mut stream).await?;
+
+        if (reason, status) == ("OK".to_owned(), 200) {
+            let list: Vec<f64> = serde_json::from_slice(&data)?;
+            Ok(list)
+        } else { Err(Error::missing_path("Napaka v remote ponudniku.")) }
     }
 }

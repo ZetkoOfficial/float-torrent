@@ -4,7 +4,7 @@ pub mod sequence_provide {
 
     use super::parse_helper::Sendable;
 
-    #[derive(Deserialize, Debug, Copy, Clone)]
+    #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
     pub struct Range {
         pub from:   u64,
         pub to:     u64,
@@ -27,12 +27,13 @@ pub mod sequence_provide {
     }
     impl Sendable for SequenceInfo {}
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug)]
     pub struct Request {
         pub range: Range,
         pub parameters: Vec<f64>,
         pub sequences: Vec<SequenceParameter>
     }
+    impl Sendable for Request {}
 
     impl Request {
         pub fn get_info(&self, name: &str) -> SequenceInfo {

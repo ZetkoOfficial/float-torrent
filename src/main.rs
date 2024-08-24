@@ -46,7 +46,7 @@ async fn main() -> Result<()>{
         let manager = manager.clone();
 
         tokio::spawn(async move {
-            match http::read::read_http(&mut stream).await {
+            match http::read::read_http_request(&mut stream).await {
                 Err(err) => err.send_error(&mut stream).await,
                 Ok((path, data)) => {
                     match path.as_str() {
