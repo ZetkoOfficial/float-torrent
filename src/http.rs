@@ -61,11 +61,13 @@ pub mod write {
     }
 
     pub async fn write_post_request(host: &str, endpoint: &str, data: &[u8], stream: &mut TcpStream) -> Result<()> {
+        
         let response_start = format!(
-            "POST {endpoint} HTTP/1.1 \r\nHost: {host}\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n", data.len()
+            "POST {endpoint} HTTP/1.1\r\nHost: {host}\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n", data.len()
         );
         stream.write_all(&response_start.as_bytes()).await?;
         stream.write_all(&data).await?;
+        
         Ok(())
     }
 }
