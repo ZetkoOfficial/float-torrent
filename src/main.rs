@@ -41,6 +41,8 @@ async fn main() -> Result<()>{
     let listener = TcpListener::bind("localhost:1111").await?;
     let manager = Arc::new(RwLock::new(ProviderManager::new()));
 
+    //manager.write().await.register_remote("localhost:2222").await?;
+
     loop {
         let (mut stream, _addr) = listener.accept().await?;
         let manager = manager.clone();

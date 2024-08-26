@@ -1,6 +1,6 @@
 pub mod sequence_provide {
     use serde::{Deserialize, Serialize};
-    use crate::error::error::Result;
+    use crate::error::{error::Result, error::Error};
 
     use super::parse_helper::Sendable;
 
@@ -36,6 +36,12 @@ pub mod sequence_provide {
     impl Sendable for Request {}
 
     impl Request {
+        pub fn validate(self) -> Result<Self> {
+            if self.range.from <= self.range.to && self.range.step > 0 {
+                Ok(self)
+            } else { Err(Error::invalid_range()) }
+        }
+
         pub fn get_info(&self, name: &str) -> SequenceInfo {
             SequenceInfo {
                 name: name.to_owned(),
@@ -43,7 +49,7 @@ pub mod sequence_provide {
                 sequences: self.sequences.len(),
                 description: "".to_owned()
             }
-        } 
+        }
     }
 
     impl SequenceParameter {
@@ -57,7 +63,10 @@ pub mod sequence_provide {
         } 
     }
 
-    pub fn parse_request(data: &[u8]) -> Result<Request> { Ok(serde_json::from_slice(&data)?) }
+    pub fn parse_request(data: &[u8]) -> Result<Request> { 
+        let request: Request = serde_json::from_slice(&data)?;
+        request.validate()
+    }
 }
 
 pub mod parse_helper {

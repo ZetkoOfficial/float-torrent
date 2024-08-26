@@ -1,4 +1,6 @@
 pub mod read {
+    use std::str::from_utf8;
+
     use tokio::{io::AsyncReadExt, net::TcpStream};
 
     use crate::error::error::{Error, Result};
@@ -36,9 +38,21 @@ pub mod read {
         match response.parse(&buffer[..read])? {
             httparse::Status::Partial => Err(Error::http_too_long(&MAX_HTTP_LENGTH)),
             httparse::Status::Complete(offset) => {
-                let buffer = &buffer[offset..read];
+
+                let mut data = buffer[offset..read].to_vec();
+                let initial_length = data.len();
+
+                let content_length = response.headers.iter()
+                    .find(|h| h.name.to_lowercase() == "content-length")
+                    .ok_or(Error::malformed_request("Manjka content-length"))?.value;
+
+                let content_length: usize = from_utf8(&content_length).unwrap().parse().unwrap(); // TODO -> implementiraj errorje
+
+                data.resize(content_length, 0);
+                stream.read_exact(&mut data[initial_length..]).await?;
+
                 match (response.reason, response.code) {
-                    (Some(reason), Some(code)) => Ok((reason.to_owned(), code, buffer.to_vec())),
+                    (Some(reason), Some(code)) => Ok((reason.to_owned(), code, data)),
                     _ => Err(Error::http_missing_response())
                 }
             }
@@ -69,5 +83,14 @@ pub mod write {
         stream.write_all(&data).await?;
         
         Ok(())
+    }
+    pub async fn write_get_request(host: &str, endpoint: &str, stream: &mut TcpStream) -> Result<()> {
+
+        let response_start = format!(
+            "GET {endpoint} HTTP/1.1\r\nHost: {host}\r\n\r\n"
+        );
+        stream.write_all(&response_start.as_bytes()).await?;        
+        Ok(())
+
     }
 }

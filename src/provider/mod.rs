@@ -61,9 +61,25 @@ impl ProviderManager {
         }
     }
     
-    pub fn get_info(&self) -> Vec<sequence_provide::SequenceInfo> {
+    pub fn get_info(&self) -> Vec<SequenceInfo> {
         self.local_providers.iter().map(|p| p.get_info()).collect()
     }
+
+    pub async fn register_remote(&mut self, host: &str) -> Result<()> {
+        let mut stream = TcpStream::connect(host).await?; 
+        http::write::write_get_request(host, "/sequence/", &mut stream).await?;
+        let (reason, status, data) = http::read::read_http_response(&mut stream).await?;
+
+        if (reason, status) == ("OK".to_owned(), 200) {
+            let list: Vec<SequenceInfo> = serde_json::from_slice(&data)?;
+            for info in list {
+                self.remote_providers.push(
+                    Box::new(RemoteSequenceProvider { host: host.to_owned(), info: info.clone() })
+                );
+            }
+            Ok(())
+        } else { Err(Error::missing_path("Napaka pri pridobivanju zaporedji remote ponudnika.")) }
+    } 
 }
 
 // ---------- implementacije nekaj posebnih primerov ----------
@@ -80,8 +96,8 @@ impl SequenceProvider for ConstantSequenceProvider {
         Ok(result) 
     }
 
-    fn get_info(&self) -> sequence_provide::SequenceInfo {
-        sequence_provide::SequenceInfo {
+    fn get_info(&self) -> SequenceInfo {
+        SequenceInfo {
             name: "const".to_owned(),
             description: "Konstantno zaporedje s členi enakimi prvemu parametru.".to_owned(),
             parameters: 1,
@@ -115,8 +131,8 @@ impl SequenceProvider for DropSequenceProvider {
             .provide(ammended,&manager).await
     }
     
-    fn get_info(&self) -> sequence_provide::SequenceInfo {
-        sequence_provide::SequenceInfo {
+    fn get_info(&self) -> SequenceInfo {
+        SequenceInfo {
             name: "drop".to_owned(),
             description: "Izpusti prvih nekaj členov zaporedja, glede na parameter".to_owned(),
             parameters: 1,
@@ -127,7 +143,7 @@ impl SequenceProvider for DropSequenceProvider {
 
 struct RemoteSequenceProvider {
     host:   String,
-    info:   sequence_provide::SequenceInfo
+    info:   SequenceInfo
 }
 
 #[async_trait]

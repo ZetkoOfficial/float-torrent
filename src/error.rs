@@ -104,6 +104,22 @@ pub mod error {
                 extra: None 
             }
         }
+        
+        pub fn invalid_range() -> Self {
+            Error {
+                error_type: ErrorType::SerdeError,
+                message: "Neveljaven range".to_owned(),
+                extra: None
+            }
+        }
+
+        pub fn malformed_request(extra: &str) -> Self {
+            Error {
+                error_type: ErrorType::HttpParseError,
+                message: "HTTP zahteva ni veljavne oblike.".to_owned(),
+                extra: Some(serde_json::Value::String(extra.to_owned()))
+            }
+        }
 
         // če je mogoče vrne error, drugače samo preskočimo
         pub async fn send_error(self, stream: &mut TcpStream) {
