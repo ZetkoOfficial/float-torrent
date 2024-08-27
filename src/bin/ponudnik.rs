@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
-use provider::ProviderManager;
+use float_torrent::parse::sequence_provide::Remote;
+use float_torrent::{parse::sequence_provide, provider::ProviderManager};
+use float_torrent::{http, error::error::{Error, Result}};
 use tokio::{net::{TcpListener, TcpStream}, sync::RwLock};
-
-mod error; mod parse; mod http; mod provider;
-use error::error::{Error, Result};
-use parse::sequence_provide::{self, Remote};
 
 // TODO: Erroje handlaj za vse route-e zunaj
 
@@ -54,9 +52,8 @@ async fn register(central_server: &Remote, info: &Remote) -> Result<()> {
 #[tokio::main]
 async fn main() -> Result<()>{
     let info = Arc::new(Remote::new("Anže Hočevar", "0.0.0.0", 1111)?);
-    
-    //let central_server = Arc::new(Remote::new("Centralni strežnik", "0.0.0.0", 2222)?);
-    //register(&central_server, &info).await?;
+    let central_server = Arc::new(Remote::new("Centralni strežnik", "0.0.0.0", 2222)?);
+    register(&central_server, &info).await?;
 
     let listener = TcpListener::bind(info.get_url()).await?;
     let manager = Arc::new(RwLock::new(ProviderManager::new()));

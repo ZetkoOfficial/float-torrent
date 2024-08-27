@@ -1,8 +1,6 @@
 pub mod read {
     use std::str::from_utf8;
-
     use tokio::{io::AsyncReadExt, net::TcpStream};
-
     use crate::error::error::{Error, Result};
     
     const MAX_HTTP_LENGTH: usize = 16384;

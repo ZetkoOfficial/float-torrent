@@ -39,7 +39,7 @@ pub mod sequence_provide {
     }
     impl Sendable for Request {}
 
-    #[derive(Serialize, Deserialize, Debug, Clone)]
+    #[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, Eq)]
     pub struct Remote {
         pub name: String,
         pub ip  : IpAddr,
