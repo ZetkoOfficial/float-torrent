@@ -1,5 +1,5 @@
 pub mod error {
-    use std::{io, result};
+    use std::{io, net::AddrParseError, num::ParseIntError, result, str::Utf8Error};
 
     use serde::Serialize;
     use tokio::net::TcpStream;
@@ -10,12 +10,14 @@ pub mod error {
     #[allow(dead_code)]
     pub enum ErrorType {
         IOError,
+        GenericParseError,
         HttpParseError,
         SerdeError,
         HttpRequestTooShort,
         MissingPath,
         MissingProvider,
         SequenceArithmeticError,
+        RemoteError,
     }
 
     #[derive(Debug, Serialize)]
@@ -49,6 +51,36 @@ pub mod error {
         fn from(value: serde_json::Error) -> Self {
             Error {
                 error_type: ErrorType::SerdeError,
+                message: value.to_string(),
+                extra: None
+            }
+        }
+    }
+
+    impl From<Utf8Error> for Error {
+        fn from(value: Utf8Error) -> Self {
+            Error {
+                error_type: ErrorType::HttpParseError,
+                message: value.to_string(),
+                extra: None
+            }
+        }
+    }
+
+    impl From<ParseIntError> for Error {
+        fn from(value: ParseIntError) -> Self {
+            Error {
+                error_type: ErrorType::GenericParseError,
+                message: value.to_string(),
+                extra: None
+            }
+        }
+    }
+
+    impl From<AddrParseError> for Error {
+        fn from(value: AddrParseError) -> Self {
+            Error {
+                error_type: ErrorType::GenericParseError,
                 message: value.to_string(),
                 extra: None
             }
@@ -117,6 +149,14 @@ pub mod error {
             Error {
                 error_type: ErrorType::HttpParseError,
                 message: "HTTP zahteva ni veljavne oblike.".to_owned(),
+                extra: Some(serde_json::Value::String(extra.to_owned()))
+            }
+        }
+
+        pub fn remote_invalid_response(extra: &str) -> Self {
+            Error {
+                error_type: ErrorType::RemoteError,
+                message: "Remote se je odzval narobe.".to_owned(),
                 extra: Some(serde_json::Value::String(extra.to_owned()))
             }
         }

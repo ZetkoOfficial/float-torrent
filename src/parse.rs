@@ -1,6 +1,10 @@
 pub mod sequence_provide {
+    use std::net::IpAddr;
+
     use serde::{Deserialize, Serialize};
+    use tokio::net::TcpStream;
     use crate::error::{error::Result, error::Error};
+    use crate::http;
 
     use super::parse_helper::Sendable;
 
@@ -34,6 +38,48 @@ pub mod sequence_provide {
         pub sequences: Vec<SequenceParameter>
     }
     impl Sendable for Request {}
+
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct Remote {
+        pub name: String,
+        pub ip  : IpAddr,
+        pub port: u16
+    }
+    impl Remote {
+        pub fn get_url(&self) -> String {
+            format!("{}:{}", self.ip, self.port)
+        }
+
+        pub fn new(name: &str, ip: &str, port: u16) -> Result<Self> {
+            let ip : IpAddr = ip.parse()?;
+
+            Ok(Remote {
+                name: name.to_owned(),
+                ip,
+                port
+            })
+        }
+
+        pub async fn get_stream(&self) -> Result<TcpStream> {
+            Ok(TcpStream::connect(&self.get_url()).await?)
+        }
+        pub async fn get(&self, endpoint: &str, stream: Option<&mut TcpStream>) -> Result<(String, u16, Vec<u8>)> {
+            let stream: &mut TcpStream = match stream {
+                None => &mut (self.get_stream().await?),
+                Some(stream) => stream
+            };
+            http::write::write_get_request(&self.get_url(), endpoint, stream).await?;
+            http::read::read_http_response(stream).await
+        }
+        pub async fn post(&self, endpoint: &str, data: &[u8], stream: Option<&mut TcpStream>) -> Result<(String, u16, Vec<u8>)> {
+            let stream: &mut TcpStream = match stream {
+                None => &mut (self.get_stream().await?),
+                Some(stream) => stream
+            };
+            http::write::write_post_request(&self.get_url(), endpoint, data, stream).await?;
+            http::read::read_http_response(stream).await
+        }
+    }
 
     impl Request {
         pub fn validate(self) -> Result<Self> {

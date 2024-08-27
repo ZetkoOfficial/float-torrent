@@ -7,6 +7,7 @@ pub mod read {
     
     const MAX_HTTP_LENGTH: usize = 16384;
 
+    // TODO: Morda povečamo makismalno dolžino requesta kot za respone
     pub async fn read_http_request(stream: &mut TcpStream) -> Result<(String, Vec<u8>)> {
         let mut buffer = [0; MAX_HTTP_LENGTH];  /* 16 kB max */
     
@@ -46,7 +47,7 @@ pub mod read {
                     .find(|h| h.name.to_lowercase() == "content-length")
                     .ok_or(Error::malformed_request("Manjka content-length"))?.value;
 
-                let content_length: usize = from_utf8(&content_length).unwrap().parse().unwrap(); // TODO -> implementiraj errorje
+                let content_length: usize = from_utf8(&content_length)?.parse()?;
 
                 data.resize(content_length, 0);
                 stream.read_exact(&mut data[initial_length..]).await?;

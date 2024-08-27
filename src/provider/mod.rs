@@ -1,9 +1,9 @@
-use std::vec;
+use std::{sync::Arc, vec};
 
-use crate::{error::error::{Error, Result}, http, parse::{parse_helper::Sendable, sequence_provide::{self, SequenceInfo}}};
+use crate::{error::error::{Error, Result}, parse::{parse_helper::Sendable, sequence_provide::{self, Remote, SequenceInfo}}};
 use async_trait::async_trait;
 use function::{ArithmeticSequence, FunctionSequenceProvider, GeometricSequence};
-use tokio::{net::TcpStream, sync::RwLock};
+use tokio::sync::RwLock;
 
 pub mod operation;
 use operation::{SumSequence, ProductSequence, OperationSequenceProvider};
@@ -65,20 +65,38 @@ impl ProviderManager {
         self.local_providers.iter().map(|p| p.get_info()).collect()
     }
 
-    pub async fn register_remote(&mut self, host: &str) -> Result<()> {
-        let mut stream = TcpStream::connect(host).await?; 
-        http::write::write_get_request(host, "/sequence/", &mut stream).await?;
-        let (reason, status, data) = http::read::read_http_response(&mut stream).await?;
+    pub async fn get_remote_sequence_providers(remote: &Remote) -> Result<Vec<Box<dyn SequenceProvider + Send>>> {
+        let mut result: Vec<Box<dyn SequenceProvider + Send>> = vec![];
+        let (reason, status, data) = remote.get("/sequence/", None).await?;
 
         if (reason, status) == ("OK".to_owned(), 200) {
             let list: Vec<SequenceInfo> = serde_json::from_slice(&data)?;
             for info in list {
-                self.remote_providers.push(
-                    Box::new(RemoteSequenceProvider { host: host.to_owned(), info: info.clone() })
+                result.push(
+                    Box::new(RemoteSequenceProvider { host: remote.clone(), info: info.clone() })
                 );
             }
+            Ok(result)
+        } else { Err(Error::remote_invalid_response(&format!("Remote URL: {}", remote.get_url()))) }
+    }
+
+    pub async fn update_providers(central_server: &Remote, manager: &Arc<RwLock<Self>>) -> Result<()> {
+        let (reason, status, data) = central_server.get("/generator/", None).await?;
+
+        if (reason, status) == ("OK".to_owned(), 200) {
+            let list: Vec<Remote> = serde_json::from_slice(&data)?;
+            let mut providers = vec![];
+            for remote in list {
+                match ProviderManager::get_remote_sequence_providers(&remote).await {
+                    Err(_) => (),
+                    Ok(mut extra) => providers.append(&mut extra)
+                }
+            }
+
+            let mut manager = manager.write().await;
+            manager.remote_providers = providers;
             Ok(())
-        } else { Err(Error::missing_path("Napaka pri pridobivanju zaporedji remote ponudnika.")) }
+        } else { Err(Error::remote_invalid_response("Napaka v centralnem strežniku pri branju registriranih.")) }
     } 
 }
 
@@ -142,7 +160,7 @@ impl SequenceProvider for DropSequenceProvider {
 }
 
 struct RemoteSequenceProvider {
-    host:   String,
+    host:   Remote,
     info:   SequenceInfo
 }
 
@@ -153,10 +171,7 @@ impl SequenceProvider for RemoteSequenceProvider {
 
     async fn provide(&self, request: sequence_provide::Request, _: &RwLock<ProviderManager>) -> Result<Vec<f64>> {
         let endpoint = format!("/sequence/{}", self.info.name);
-        
-        let mut stream = TcpStream::connect(&self.host).await?; 
-        http::write::write_post_request(&self.host, &endpoint, &request.as_sendable()?, &mut stream).await?;
-        let (reason, status, data) = http::read::read_http_response(&mut stream).await?;
+        let (reason, status, data) = self.host.post(&endpoint, &request.as_sendable()?, None).await?;
 
         if (reason, status) == ("OK".to_owned(), 200) {
             let list: Vec<f64> = serde_json::from_slice(&data)?;
