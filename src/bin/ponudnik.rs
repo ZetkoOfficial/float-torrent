@@ -41,6 +41,7 @@ async fn main() -> Result<()>{
     let listener = TcpListener::bind(info.get_url()).await?;
     let manager = Arc::new(RwLock::new(ProviderManager::new(&info, &central_server)));
     
+    // TODO: To naj bo task, ki se izvede vsakih nekaj minut, da se providerji osvežijo
     ProviderManager::update_providers(&manager).await?;
 
     loop {

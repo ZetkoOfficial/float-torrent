@@ -1,6 +1,7 @@
 use std::{sync::Arc, vec};
 
 use crate::{error::error::{Error, Result}, parse::{parse_helper::Sendable, sequence_provide::{self, Remote, SequenceInfo}}};
+use rand::seq::SliceRandom;
 use async_trait::async_trait;
 use function::{ArithmeticSequence, FunctionSequenceProvider, GeometricSequence};
 use tokio::sync::RwLock;
@@ -50,18 +51,13 @@ impl ProviderManager {
             central: central.clone()
         }
     }
-
+    /* TODO: provider.get_info lahko morda vrne reference */
     pub fn find(&self, seq: &SequenceInfo) -> Option<&Box<dyn SequenceProvider + Send>> {
-        let local = self.local_providers.iter().filter(|provider| {
-                let info = provider.get_info();
-                info.parameters == seq.parameters && info.sequences == seq.sequences && info.name == seq.name
-        }).next();
+        let local = self.local_providers.iter().filter(|provider| &provider.get_info() == seq).next();
         if local.is_some() { local }
         else {
-            self.remote_providers.iter().filter(|provider| {
-                let info = provider.get_info();
-                info.parameters == seq.parameters && info.sequences == seq.sequences && info.name == seq.name
-            }).next()
+            let valid: Vec<&Box<dyn SequenceProvider + Send>> = self.remote_providers.iter().filter(|provider| &provider.get_info() == seq).collect();
+            valid.choose(&mut rand::thread_rng()).map(|provider| *provider)
         }
     }
     

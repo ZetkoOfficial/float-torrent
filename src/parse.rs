@@ -30,6 +30,11 @@ pub mod sequence_provide {
         pub sequences: usize
     }
     impl Sendable for SequenceInfo {}
+    impl PartialEq for SequenceInfo {
+        fn eq(&self, other: &Self) -> bool {
+            self.name == other.name && self.parameters == other.parameters && self.sequences == other.sequences
+        }
+    }
 
     #[derive(Serialize, Deserialize, Debug)]
     pub struct Request {
