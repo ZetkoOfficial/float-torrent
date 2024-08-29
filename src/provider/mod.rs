@@ -29,11 +29,13 @@ pub trait SequenceProvider : Sync {
 }
 pub struct ProviderManager {
     local_providers:    Vec<Box<dyn SequenceProvider + Send>>,
-    remote_providers:   Vec<Box<dyn SequenceProvider + Send>>
+    remote_providers:   Vec<Box<dyn SequenceProvider + Send>>,
+    generator:          Remote,
+    central:            Remote
 }
 
 impl ProviderManager {
-    pub fn new() -> Self {
+    pub fn new(generator: &Remote, central: &Remote) -> Self {
         ProviderManager { 
             local_providers: (vec! [
                 Box::new(ConstantSequenceProvider {}),
@@ -43,7 +45,9 @@ impl ProviderManager {
                 Box::new(FunctionSequenceProvider::new(Box::new(ArithmeticSequence {}))),
                 Box::new(FunctionSequenceProvider::new(Box::new(GeometricSequence {}))),
             ]),
-            remote_providers: vec![]
+            remote_providers: vec![],
+            generator: generator.clone(),
+            central: central.clone()
         }
     }
 
@@ -65,7 +69,7 @@ impl ProviderManager {
         self.local_providers.iter().map(|p| p.get_info()).collect()
     }
 
-    pub async fn get_remote_sequence_providers(remote: &Remote) -> Result<Vec<Box<dyn SequenceProvider + Send>>> {
+    async fn get_remote_sequence_providers(remote: &Remote) -> Result<Vec<Box<dyn SequenceProvider + Send>>> {
         let mut result: Vec<Box<dyn SequenceProvider + Send>> = vec![];
         let (reason, status, data) = remote.get("/sequence/", None).await?;
 
@@ -80,17 +84,21 @@ impl ProviderManager {
         } else { Err(Error::remote_invalid_response(&format!("Remote URL: {}", remote.get_url()))) }
     }
 
-    pub async fn update_providers(central_server: &Remote, manager: &Arc<RwLock<Self>>) -> Result<()> {
+    pub async fn update_providers(manager: &Arc<RwLock<Self>>) -> Result<()> {
+        let generator = manager.read().await.generator.clone();
+        let central_server = manager.read().await.central.clone();      
         let (reason, status, data) = central_server.get("/generator/", None).await?;
 
         if (reason, status) == ("OK".to_owned(), 200) {
             let list: Vec<Remote> = serde_json::from_slice(&data)?;
             let mut providers = vec![];
             for remote in list {
-                match ProviderManager::get_remote_sequence_providers(&remote).await {
-                    Err(_) => (),
-                    Ok(mut extra) => providers.append(&mut extra)
-                }
+                if remote != generator {
+                    match ProviderManager::get_remote_sequence_providers(&remote).await {
+                        Err(_) => (),
+                        Ok(mut extra) => providers.append(&mut extra)
+                    }
+                }    
             }
 
             let mut manager = manager.write().await;
