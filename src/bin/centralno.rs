@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use clap::Parser;
-use float_torrent::parse::sequence_provide::Remote;
+use float_torrent::parse::remote::Remote;
 use float_torrent::parse::settings;
 use float_torrent::{http, error::error::{Error, Result}};
 use tokio::{net::{TcpListener, TcpStream}, sync::RwLock};

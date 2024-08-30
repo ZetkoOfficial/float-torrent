@@ -1,6 +1,7 @@
 use std::vec;
 
-use crate::{error::error::{Error, Result}, parse::{parse_helper::Sendable, sequence_provide::{self, Remote, SequenceInfo}}};
+use crate::{error::error::{Error, Result}, parse::{parse_helper::Sendable, sequence_provide::{self, SequenceInfo}}};
+use crate::parse::remote::Remote;
 use rand::seq::SliceRandom;
 use async_trait::async_trait;
 use function::{ArithmeticSequence, FunctionSequenceProvider, GeometricSequence};

@@ -47,7 +47,7 @@ pub mod settings {
     }
 }    
 
-pub mod sequence_provide {        
+pub mod remote {
     use std::net::IpAddr;
     use std::time::Duration;
 
@@ -56,44 +56,6 @@ pub mod sequence_provide {
     use tokio::time::timeout;
     use crate::error::{error::Result, error::Error};
     use crate::http;
-
-    use super::parse_helper::Sendable;
-
-    #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
-    pub struct Range {
-        pub from:   u64,
-        pub to:     u64,
-        pub step:   u64
-    }
-
-    #[derive(Serialize, Deserialize, Debug, Clone)]
-    pub struct SequenceParameter {
-        pub name: String, 
-        pub parameters: Vec<f64>,
-        pub sequences: Vec<SequenceParameter>
-    }
-
-    #[derive(Serialize, Deserialize, Debug, Clone)]
-    pub struct SequenceInfo {
-        pub name: String,
-        pub description: String,
-        pub parameters: usize,
-        pub sequences: usize
-    }
-    impl Sendable for SequenceInfo {}
-    impl PartialEq for SequenceInfo {
-        fn eq(&self, other: &Self) -> bool {
-            self.name == other.name && self.parameters == other.parameters && self.sequences == other.sequences
-        }
-    }
-
-    #[derive(Serialize, Deserialize, Debug)]
-    pub struct Request {
-        pub range: Range,
-        pub parameters: Vec<f64>,
-        pub sequences: Vec<SequenceParameter>
-    }
-    impl Sendable for Request {}
 
     #[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, Eq)]
     pub struct Remote {
@@ -141,6 +103,48 @@ pub mod sequence_provide {
             else {Err(Error::remote_invalid_response("Endpoint /ping/ je vrnil napako"))}
         } 
     }
+}
+
+pub mod sequence_provide {        
+    use serde::{Deserialize, Serialize};
+    use crate::error::{error::Result, error::Error};
+    use super::parse_helper::Sendable;
+
+    #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+    pub struct Range {
+        pub from:   u64,
+        pub to:     u64,
+        pub step:   u64
+    }
+
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct SequenceParameter {
+        pub name: String, 
+        pub parameters: Vec<f64>,
+        pub sequences: Vec<SequenceParameter>
+    }
+
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct SequenceInfo {
+        pub name: String,
+        pub description: String,
+        pub parameters: usize,
+        pub sequences: usize
+    }
+    impl Sendable for SequenceInfo {}
+    impl PartialEq for SequenceInfo {
+        fn eq(&self, other: &Self) -> bool {
+            self.name == other.name && self.parameters == other.parameters && self.sequences == other.sequences
+        }
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct Request {
+        pub range: Range,
+        pub parameters: Vec<f64>,
+        pub sequences: Vec<SequenceParameter>
+    }
+    impl Sendable for Request {}
 
     impl Request {
         pub fn validate(self) -> Result<Self> {
