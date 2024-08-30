@@ -2,7 +2,7 @@ pub mod error {
     use std::{io, net::AddrParseError, num::ParseIntError, result, str::Utf8Error};
 
     use serde::Serialize;
-    use tokio::net::TcpStream;
+    use tokio::{net::TcpStream, time::error::Elapsed};
 
     use crate::{http, parse::{parse_helper::Sendable, sequence_provide}};
 
@@ -18,6 +18,7 @@ pub mod error {
         MissingProvider,
         SequenceArithmeticError,
         RemoteError,
+        Timeout,
     }
 
     #[derive(Debug, Serialize)]
@@ -81,6 +82,16 @@ pub mod error {
         fn from(value: AddrParseError) -> Self {
             Error {
                 error_type: ErrorType::GenericParseError,
+                message: value.to_string(),
+                extra: None
+            }
+        }
+    }
+
+    impl From<Elapsed> for Error {
+        fn from(value: Elapsed) -> Self {
+            Error {
+                error_type: ErrorType::Timeout,
                 message: value.to_string(),
                 extra: None
             }

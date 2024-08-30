@@ -1,8 +1,10 @@
-pub mod sequence_provide {
+pub mod sequence_provide {    
     use std::net::IpAddr;
+    use std::time::Duration;
 
     use serde::{Deserialize, Serialize};
     use tokio::net::TcpStream;
+    use tokio::time::timeout;
     use crate::error::{error::Result, error::Error};
     use crate::http;
 
@@ -84,6 +86,11 @@ pub mod sequence_provide {
             http::write::write_post_request(&self.get_url(), endpoint, data, stream).await?;
             http::read::read_http_response(stream).await
         }
+        pub async fn ping(&self, stream: Option<&mut TcpStream>) -> Result<()> {
+            let (reason, status, _) = timeout(Duration::from_secs(5), self.get("/ping/", stream)).await??;
+            if (reason, status) == ("OK".to_owned(), 200) { Ok(()) }
+            else {Err(Error::remote_invalid_response("Endpoint /ping/ je vrnil napako"))}
+        } 
     }
 
     impl Request {

@@ -1,4 +1,4 @@
-use std::{sync::Arc, vec};
+use std::vec;
 
 use crate::{error::error::{Error, Result}, parse::{parse_helper::Sendable, sequence_provide::{self, Remote, SequenceInfo}}};
 use rand::seq::SliceRandom;
@@ -51,7 +51,7 @@ impl ProviderManager {
             central: central.clone()
         }
     }
-    /* TODO: provider.get_info lahko morda vrne reference */
+
     pub fn find(&self, seq: &SequenceInfo) -> Option<&Box<dyn SequenceProvider + Send>> {
         let local = self.local_providers.iter().filter(|provider| &provider.get_info() == seq).next();
         if local.is_some() { local }
@@ -80,7 +80,7 @@ impl ProviderManager {
         } else { Err(Error::remote_invalid_response(&format!("Remote URL: {}", remote.get_url()))) }
     }
 
-    pub async fn update_providers(manager: &Arc<RwLock<Self>>) -> Result<()> {
+    pub async fn update_providers(manager: &RwLock<Self>) -> Result<()> {
         let generator = manager.read().await.generator.clone();
         let central_server = manager.read().await.central.clone();      
         let (reason, status, data) = central_server.get("/generator/", None).await?;

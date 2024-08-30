@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::time::Duration;
 
 use float_torrent::parse::sequence_provide::Remote;
 use float_torrent::{http, error::error::{Error, Result}};
@@ -10,7 +11,7 @@ async fn route_ping (stream: &mut TcpStream, info: &Remote) -> Result<()> {
     Ok(())
 }
 
-async fn route_generator(stream: &mut TcpStream, registered: &Arc<RwLock<HashSet<Remote>>>, data: &[u8]) -> Result<()> {
+async fn route_generator(stream: &mut TcpStream, registered: &RwLock<HashSet<Remote>>, data: &[u8]) -> Result<()> {
     if data.is_empty() {
         let mut result = vec![];
         {
@@ -36,12 +37,31 @@ async fn main() -> Result<()>{
     let info = Arc::new(Remote::new("Centralni strežnik", "0.0.0.0", 2222)?);
 
     let listener = TcpListener::bind(info.get_url()).await?;
-    let registered = Arc::new(RwLock::new(HashSet::new()));
+    let registered = Arc::new(RwLock::new(HashSet::<Remote>::new()));
+
+    { 
+        let registered = registered.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(60));
+            loop {
+                interval.tick().await;
+                let mut result = HashSet::<Remote>::new();
+                for remote in registered.read().await.iter() {
+                    if remote.ping(None).await.is_ok() {
+                        result.insert(remote.clone());
+                    }
+                }
+                let mut registered = registered.write().await;
+                *registered = result;
+                println!("Osveženo!")
+            }
+        });
+    }
 
     loop {
         let (mut stream, _addr) = listener.accept().await?;
-        let registered = registered.clone();
         let info = info.clone();
+        let registered = registered.clone();
 
         tokio::spawn(async move {
             match http::read::read_http_request(&mut stream).await {

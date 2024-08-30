@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use float_torrent::parse::sequence_provide::Remote;
 use float_torrent::{parse::sequence_provide, provider::ProviderManager};
@@ -40,9 +41,17 @@ async fn main() -> Result<()>{
 
     let listener = TcpListener::bind(info.get_url()).await?;
     let manager = Arc::new(RwLock::new(ProviderManager::new(&info, &central_server)));
-    
-    // TODO: To naj bo task, ki se izvede vsakih nekaj minut, da se providerji osvežijo
-    ProviderManager::update_providers(&manager).await?;
+
+    { 
+        let manager = manager.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(60));
+            loop {
+                interval.tick().await;
+                ProviderManager::update_providers(&manager).await.unwrap_or_else(|_| println!("Napaka pri posodabljanju remote providerjev."));
+            }
+        });
+    }
 
     loop {
         let (mut stream, _addr) = listener.accept().await?;
