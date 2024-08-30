@@ -1,4 +1,53 @@
-pub mod sequence_provide {    
+pub mod settings {
+    use std::net::{IpAddr, Ipv4Addr};
+    use clap::Parser;
+
+    #[derive(Parser, Debug)]
+    #[command(name = "FloatTorrent ponudnik zaporedij", version, about, long_about=None)]
+    pub struct SettingsPonudnik {
+        /// IP naslov centralnega strežnika
+        #[arg(long)]
+        pub centralni_ip:   IpAddr,
+
+        /// Port, na katerem deluje centralni strežnik
+        #[arg(long)]
+        pub centralni_port: u16,
+
+        /// IP naslov tega ponudnika (se uporablja za registracijo)
+        #[arg(short, long, default_value_t=IpAddr::V4(Ipv4Addr::new(0,0,0,0)))]
+        pub ip:      IpAddr,
+
+        /// Port tega ponudnika
+        #[arg(short, long, default_value_t=9000)]
+        pub port:    u16,
+
+        /// Želen čas v sekundah, po katerem se ponudnik znova posvetuje z centralnim in pridobi zaporedja, ki jih ponujajo drugi. 
+        #[arg(short, default_value_t=60)]
+        pub osvezitveni_cas:  u64
+    }
+
+    #[derive(Parser, Debug)]
+    #[command(name = "FloatTorrent centralni strežnik generatorjev", version, about, long_about=None)]
+    pub struct SettingsCentralni{
+        /// IP naslov tega centralnega strežnika
+        #[arg(short, long, default_value_t=IpAddr::V4(Ipv4Addr::new(0,0,0,0)))]
+        pub ip:      IpAddr,
+
+        /// Port tega ponudnika
+        #[arg(short, long, default_value_t=9999)]
+        pub port:    u16,
+
+        /// Želen čas v sekundah, po katerem centralni strežnik ping-a vse registrirane, in jih v primeu neodzivnosti odstrani. 
+        #[arg(short, default_value_t=60)]
+        pub osvezitveni_cas:  u64,
+
+        /// Čas, v sekundah, po katerem se ping izteče
+        #[arg(short, default_value_t=5)]
+        pub timeout_ping:  u64
+    }
+}    
+
+pub mod sequence_provide {        
     use std::net::IpAddr;
     use std::time::Duration;
 
@@ -86,8 +135,8 @@ pub mod sequence_provide {
             http::write::write_post_request(&self.get_url(), endpoint, data, stream).await?;
             http::read::read_http_response(stream).await
         }
-        pub async fn ping(&self, stream: Option<&mut TcpStream>) -> Result<()> {
-            let (reason, status, _) = timeout(Duration::from_secs(5), self.get("/ping/", stream)).await??;
+        pub async fn ping(&self, stream: Option<&mut TcpStream>, timeout_length: u64) -> Result<()> {
+            let (reason, status, _) = timeout(Duration::from_secs(timeout_length), self.get("/ping/", stream)).await??;
             if (reason, status) == ("OK".to_owned(), 200) { Ok(()) }
             else {Err(Error::remote_invalid_response("Endpoint /ping/ je vrnil napako"))}
         } 

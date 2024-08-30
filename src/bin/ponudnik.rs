@@ -1,10 +1,13 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use clap::Parser;
 use float_torrent::parse::sequence_provide::Remote;
+use float_torrent::parse::settings;
 use float_torrent::{parse::sequence_provide, provider::ProviderManager};
 use float_torrent::{http, error::error::{Error, Result}};
-use tokio::{net::{TcpListener, TcpStream}, sync::RwLock};
+use tokio::net::TcpListener;
+use tokio::{net::TcpStream, sync::RwLock};
 
 async fn route_sequence_generic(path: &str, data: &[u8], stream: &mut TcpStream, manager: &RwLock<ProviderManager>) -> Result<()> {
     let request = sequence_provide::parse_request(&data)?;
@@ -34,9 +37,12 @@ async fn register(central_server: &Remote, info: &Remote) -> Result<()> {
 }
 
 #[tokio::main]
-async fn main() -> Result<()>{
-    let info = Arc::new(Remote::new("Anže Hočevar", "0.0.0.0", 1111)?);
-    let central_server = Arc::new(Remote::new("Centralni strežnik", "0.0.0.0", 2222)?);
+async fn main() -> Result<()> {
+
+    let settings = settings::SettingsPonudnik::parse();
+
+    let info = Arc::new(Remote::new("Anže Hočevar", &settings.ip.to_string(), settings.port)?);
+    let central_server = Arc::new(Remote::new("Centralni strežnik", &settings.centralni_ip.to_string(), settings.centralni_port)?);
     register(&central_server, &info).await?;
 
     let listener = TcpListener::bind(info.get_url()).await?;
@@ -45,7 +51,7 @@ async fn main() -> Result<()>{
     { 
         let manager = manager.clone();
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(Duration::from_secs(60));
+            let mut interval = tokio::time::interval(Duration::from_secs(settings.osvezitveni_cas));
             loop {
                 interval.tick().await;
                 ProviderManager::update_providers(&manager).await.unwrap_or_else(|_| println!("Napaka pri posodabljanju remote providerjev."));
@@ -81,7 +87,5 @@ async fn main() -> Result<()>{
                 }
             }
         });
-
-        println!("Ready for new connection...");
     }
 }
