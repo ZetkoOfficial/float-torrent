@@ -2,14 +2,14 @@ use std::vec;
 
 use crate::{error::error::{Error, Result}, parse::{parse_helper::Sendable, sequence_provide::{self, SequenceInfo}}};
 use crate::parse::remote::Remote;
-use misc::{ConstantSequenceProvider, DropSequenceProvider, LinearRecursionHSequenceProvider};
+use misc::{ConstantSequenceProvider, DropSequenceProvider, LinearRecursionHSequenceProvider, PowerModSequenceProvider};
 use rand::seq::SliceRandom;
 use async_trait::async_trait;
 use function::{ArithmeticSequence, FunctionSequenceProvider, GeometricSequence};
 use tokio::sync::RwLock;
 
 
-use operation::{SumSequence, ProductSequence, OperationSequenceProvider};
+use operation::{LinComSequence, OperationSequenceProvider, ProductSequence, RoundSequence, SumSequence};
 
 pub mod function;
 pub mod operation;
@@ -48,12 +48,15 @@ impl ProviderManager {
                 Box::new(DropSequenceProvider {}),
                 Box::new(OperationSequenceProvider::new(Box::new(SumSequence {}))),
                 Box::new(OperationSequenceProvider::new(Box::new(ProductSequence {}))),
+                Box::new(OperationSequenceProvider::new(Box::new(LinComSequence {}))),
+                Box::new(OperationSequenceProvider::new(Box::new(RoundSequence {}))),
                 Box::new(FunctionSequenceProvider::new(Box::new(ArithmeticSequence {}))),
                 Box::new(FunctionSequenceProvider::new(Box::new(GeometricSequence {}))),
                 Box::new(LinearRecursionHSequenceProvider::new(1)),
                 Box::new(LinearRecursionHSequenceProvider::new(2)),
                 Box::new(LinearRecursionHSequenceProvider::new(3)),
                 Box::new(LinearRecursionHSequenceProvider::new(4)),
+                Box::new(PowerModSequenceProvider {}),
             ]),
             remote_providers: vec![],
             generator: generator.clone(),
