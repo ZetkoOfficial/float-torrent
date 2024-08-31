@@ -98,9 +98,9 @@ pub mod remote {
             http::read::read_http_response(stream).await
         }
         pub async fn ping(&self, stream: Option<&mut TcpStream>, timeout_length: u64) -> Result<()> {
-            let (reason, status, _) = timeout(Duration::from_secs(timeout_length), self.get("/ping/", stream)).await??;
+            let (reason, status, data) = timeout(Duration::from_secs(timeout_length), self.get("/ping/", stream)).await??;
             if (reason, status) == ("OK".to_owned(), 200) { Ok(()) }
-            else {Err(Error::remote_invalid_response("Endpoint /ping/ je vrnil napako"))}
+            else {Err(Error::remote_invalid_response(&self.get_url(), &data))}
         } 
     }
 }

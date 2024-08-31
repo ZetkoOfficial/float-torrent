@@ -15,7 +15,7 @@ async fn route_sequence_generic(path: &str, data: &[u8], stream: &mut TcpStream,
     let result = manager.read().await
         .find(&request.get_info(path))?
         .provide(request, manager).await?;
-    
+
     http::write::write_http("200 OK", &serde_json::to_vec_pretty(&result)?, stream).await
 }
 
@@ -30,8 +30,8 @@ async fn route_ping (stream: &mut TcpStream, info: &Remote) -> Result<()> {
 }
 
 async fn register(central_server: &Remote, info: &Remote) -> Result<()> {
-    let (reason, status, _) = central_server.post("/generator/", &serde_json::to_vec_pretty(&info)?, None).await?;
-    if (reason, status) == ("OK".to_owned(), 200) { Ok(()) } else { Err(Error::remote_invalid_response("Napaka pri registraciji")) }
+    let (reason, status, data) = central_server.post("/generator/", &serde_json::to_vec_pretty(&info)?, None).await?;
+    if (reason, status) == ("OK".to_owned(), 200) { Ok(()) } else { Err(Error::remote_invalid_response(&central_server.get_url(), &data)) }
 }
 
 #[tokio::main]
@@ -71,7 +71,7 @@ async fn main() -> Result<()> {
                         "/ping/"        => route_ping(&mut stream, &info).await,
                         path      => {
                             if path.starts_with("/sequence/") {
-                                match path.get("/sequence/".len()..) {
+                                match path.get("/sequence/".len()..path.len()-1) {
                                     Some(path) => route_sequence_generic(path, &data, &mut stream, &manager).await,
                                     None => Err(Error::missing_path(path)),
                                 }

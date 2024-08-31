@@ -99,7 +99,7 @@ impl ProviderManager {
                 );
             }
             Ok(result)
-        } else { Err(Error::remote_invalid_response(&format!("Remote URL: {}", remote.get_url()))) }
+        } else { Err(Error::remote_invalid_response(&remote.get_url(), &data)) }
     }
 
     pub async fn update_providers(manager: &RwLock<Self>) -> Result<()> {
@@ -122,7 +122,7 @@ impl ProviderManager {
             let mut manager = manager.write().await;
             manager.remote_providers = providers;
             Ok(())
-        } else { Err(Error::remote_invalid_response("Napaka v centralnem strežniku pri branju registriranih.")) }
+        } else { Err(Error::remote_invalid_response(&central_server.get_url(),&data)) }
     } 
 }
 
@@ -139,12 +139,12 @@ impl SequenceProvider for RemoteSequenceProvider {
     fn get_info(&self) -> sequence_provide::SequenceInfo { self.info.clone() }
 
     async fn provide(&self, request: sequence_provide::Request, _: &RwLock<ProviderManager>) -> Result<Vec<f64>> {
-        let endpoint = format!("/sequence/{}", self.info.name);
+        let endpoint = format!("/sequence/{}/", self.info.name);
         let (reason, status, data) = self.host.post(&endpoint, &request.as_sendable()?, None).await?;
 
         if (reason, status) == ("OK".to_owned(), 200) {
             let list: Vec<f64> = serde_json::from_slice(&data)?;
             Ok(list)
-        } else { Err(Error::missing_path("Napaka v remote ponudniku.")) }
+        } else { Err(Error::remote_invalid_response(&self.host.get_url(), &data)) }
     }
 }

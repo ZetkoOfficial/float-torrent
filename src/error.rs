@@ -179,11 +179,15 @@ pub mod error {
             }
         }
 
-        pub fn remote_invalid_response(extra: &str) -> Self {
+        pub fn remote_invalid_response(url: &str, error: &[u8]) -> Self {
+            let error_json: Option<serde_json::Value> = serde_json::from_slice(error).ok();
             Error {
                 error_type: ErrorType::RemoteError,
                 message: "Remote se je odzval narobe.".to_owned(),
-                extra: Some(serde_json::Value::String(extra.to_owned()))
+                extra: Some(json!({
+                    "url":      serde_json::Value::String(url.to_owned()),
+                    "error":    error_json
+                }))
             }
         }
 
