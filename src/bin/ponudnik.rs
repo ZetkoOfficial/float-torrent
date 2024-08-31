@@ -12,13 +12,11 @@ use tokio::{net::TcpStream, sync::RwLock};
 async fn route_sequence_generic(path: &str, data: &[u8], stream: &mut TcpStream, manager: &RwLock<ProviderManager>) -> Result<()> {
     let request = sequence_provide::parse_request(&data)?;
     
-    match manager.read().await.find(&request.get_info(path)) {
-        None => Err(Error::missing_provider(&request.get_info(path))),
-        Some(provider) => {
-            let result = provider.provide(request, manager).await?;
-            http::write::write_http("200 OK", &serde_json::to_vec_pretty(&result)?, stream).await
-        }
-    }
+    let result = manager.read().await
+        .find(&request.get_info(path))?
+        .provide(request, manager).await?;
+    
+    http::write::write_http("200 OK", &serde_json::to_vec_pretty(&result)?, stream).await
 }
 
 async fn route_sequence(stream: &mut TcpStream, manager: &RwLock<ProviderManager>) -> Result<()> {

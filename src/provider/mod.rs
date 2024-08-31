@@ -2,14 +2,18 @@ use std::vec;
 
 use crate::{error::error::{Error, Result}, parse::{parse_helper::Sendable, sequence_provide::{self, SequenceInfo}}};
 use crate::parse::remote::Remote;
+use misc::{ConstantSequenceProvider, DropSequenceProvider, LinearRecursionHSequenceProvider};
 use rand::seq::SliceRandom;
 use async_trait::async_trait;
 use function::{ArithmeticSequence, FunctionSequenceProvider, GeometricSequence};
 use tokio::sync::RwLock;
 
-pub mod operation;
+
 use operation::{SumSequence, ProductSequence, OperationSequenceProvider};
+
 pub mod function;
+pub mod operation;
+pub mod misc;
 
 #[async_trait]
 pub trait SequenceProvider : Sync {
@@ -19,7 +23,7 @@ pub trait SequenceProvider : Sync {
     async fn provide(&self, request: sequence_provide::Request, manager: &RwLock<ProviderManager>) -> Result<Vec<f64>> {
         let mut sequences = vec![];
         for seq in &request.sequences {
-            let result = manager.read().await.find(&seq.get_info()).ok_or(Error::missing_provider(&seq.get_info()))?.provide(
+            let result = manager.read().await.find(&seq.get_info())?.provide(
                 sequence_provide::Request { range: request.range, parameters: seq.parameters.clone(), sequences: seq.sequences.clone() },
                 &manager
             ).await?;
@@ -46,6 +50,10 @@ impl ProviderManager {
                 Box::new(OperationSequenceProvider::new(Box::new(ProductSequence {}))),
                 Box::new(FunctionSequenceProvider::new(Box::new(ArithmeticSequence {}))),
                 Box::new(FunctionSequenceProvider::new(Box::new(GeometricSequence {}))),
+                Box::new(LinearRecursionHSequenceProvider::new(1)),
+                Box::new(LinearRecursionHSequenceProvider::new(2)),
+                Box::new(LinearRecursionHSequenceProvider::new(3)),
+                Box::new(LinearRecursionHSequenceProvider::new(4)),
             ]),
             remote_providers: vec![],
             generator: generator.clone(),
@@ -53,12 +61,25 @@ impl ProviderManager {
         }
     }
 
-    pub fn find(&self, seq: &SequenceInfo) -> Option<&Box<dyn SequenceProvider + Send>> {
-        let local = self.local_providers.iter().filter(|provider| &provider.get_info() == seq).next();
-        if local.is_some() { local }
+    pub fn find(&self, seq: &SequenceInfo) -> Result<&Box<dyn SequenceProvider + Send>> {
+        let mut close = vec![];
+        
+        let local = self.local_providers.iter().filter(|provider| {
+            let info = &provider.get_info();
+            if info.name == seq.name { close.push(info.clone()); }
+            info == seq
+        }).next();
+
+        if local.is_some() { Ok(local.unwrap()) }
         else {
-            let valid: Vec<&Box<dyn SequenceProvider + Send>> = self.remote_providers.iter().filter(|provider| &provider.get_info() == seq).collect();
-            valid.choose(&mut rand::thread_rng()).map(|provider| *provider)
+            let valid: Vec<&Box<dyn SequenceProvider + Send>> = self.remote_providers.iter().filter(|provider| {
+                let info = &provider.get_info();
+                if info.name == seq.name { close.push(info.clone()); }
+                info == seq
+            }).collect();
+            valid.choose(&mut rand::thread_rng()).map(|provider| *provider).ok_or(
+                Error::missing_provider(seq.clone(), &close)
+            )
         }
     }
     
@@ -106,63 +127,6 @@ impl ProviderManager {
 }
 
 // ---------- implementacije nekaj posebnih primerov ----------
-
-struct ConstantSequenceProvider {}
-impl SequenceProvider for ConstantSequenceProvider {
-    fn generate(&self, range: sequence_provide::Range, parameters: &[f64], _sequences: &[Vec<f64>]) -> Result<Vec<f64>> {
-        let mut result = vec![];
-        
-        let mut i = range.from; 
-        while i < range.to {
-            result.push(parameters[0]); i += range.step;
-        }
-        Ok(result) 
-    }
-
-    fn get_info(&self) -> SequenceInfo {
-        SequenceInfo {
-            name: "const".to_owned(),
-            description: "Konstantno zaporedje s členi enakimi prvemu parametru.".to_owned(),
-            parameters: 1,
-            sequences: 0
-        }
-    }
-} 
-struct DropSequenceProvider {}
-#[async_trait]
-impl SequenceProvider for DropSequenceProvider {
-    
-    fn generate(&self,_:sequence_provide::Range,_: &[f64],_: &[Vec<f64>]) -> Result<Vec<f64> > {
-        panic!("Unreachable code!")
-    }
-
-    async fn provide(&self, request: sequence_provide::Request, manager: &RwLock<ProviderManager>) -> Result<Vec<f64>> {
-        let drop_count = request.parameters[0].trunc();
-        if drop_count < 0. { return Err(Error::sequence_arithmetic_error("Parameter mora biti pozitiven")); }
-        let drop_count = drop_count as u64;
-
-        let sequence = request.sequences[0].clone();
-
-        let ammended = sequence_provide::Request {
-            range: sequence_provide::Range { from: request.range.from+drop_count, to: request.range.to+drop_count, step: request.range.step },
-            parameters: sequence.parameters.clone(),
-            sequences: sequence.sequences.clone()
-        };
-
-        manager.read().await.find(&sequence.get_info())
-            .ok_or(Error::missing_provider(&sequence.get_info()))?
-            .provide(ammended,&manager).await
-    }
-    
-    fn get_info(&self) -> SequenceInfo {
-        SequenceInfo {
-            name: "drop".to_owned(),
-            description: "Izpusti prvih nekaj členov zaporedja, glede na parameter".to_owned(),
-            parameters: 1,
-            sequences: 1
-        }
-    }
-}
 
 struct RemoteSequenceProvider {
     host:   Remote,

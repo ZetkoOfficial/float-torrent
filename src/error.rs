@@ -1,7 +1,8 @@
 pub mod error {
-    use std::{io, net::AddrParseError, num::ParseIntError, result, str::Utf8Error};
+    use std::{io, net::AddrParseError, num::{ParseIntError, TryFromIntError}, result, str::Utf8Error};
 
     use serde::Serialize;
+    use serde_json::json;
     use tokio::{net::TcpStream, time::error::Elapsed};
 
     use crate::{http, parse::{parse_helper::Sendable, sequence_provide}};
@@ -19,6 +20,7 @@ pub mod error {
         SequenceArithmeticError,
         RemoteError,
         Timeout,
+        ArithmeticError,
     }
 
     #[derive(Debug, Serialize)]
@@ -98,6 +100,16 @@ pub mod error {
         }
     }
 
+    impl From<TryFromIntError> for Error {
+        fn from(value: TryFromIntError) -> Self {
+            Error {
+                error_type: ErrorType::ArithmeticError,
+                message: value.to_string(),
+                extra: None
+            }
+        }
+    }
+
     impl Sendable for Error {}
     impl Error {
         pub fn missing_path(path: &str) -> Self {
@@ -120,12 +132,15 @@ pub mod error {
             }
         }
 
-        pub fn missing_provider(seq: &sequence_provide::SequenceInfo) -> Self {
+        pub fn missing_provider(seq: sequence_provide::SequenceInfo, close: &[sequence_provide::SequenceInfo]) -> Self {
             Error { 
                 error_type: ErrorType::MissingProvider, 
-                message: "Ponudnik zaporedja ni najden".to_owned(), 
+                message: "Ponudnik zaporedja ni najden. Blizu so so spodnji ponudniki.".to_owned(), 
                 extra: Some(
-                    serde_json::to_value(seq).unwrap()
+                    json!({
+                        "_query":   serde_json::to_value(seq).unwrap(),
+                        "close":    serde_json::to_value(close).unwrap()  
+                    })
                 ) 
             }
         }
