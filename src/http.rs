@@ -7,68 +7,101 @@ pub mod read {
 
     // TODO: Morda povečamo makismalno dolžino requesta kot za respone
     pub async fn read_http_request(stream: &mut TcpStream) -> Result<(String, Vec<u8>)> {
-        let mut buffer = [0; MAX_HTTP_LENGTH];  /* 16 kB max */
-    
+        let mut buffer = vec![]; /* 16 kB max */
+        
+        loop {
+            let mut headers = [httparse::EMPTY_HEADER; 8];
+            let mut request = httparse::Request::new(&mut headers);
+
+            {
+                let mut buffer_tmp = [0; MAX_HTTP_LENGTH];
+                let read_current = stream.read(&mut buffer_tmp).await?;
+
+                buffer.extend_from_slice(&buffer_tmp[..read_current]);
+            }
+            
+            match request.parse(&buffer)? {
+                httparse::Status::Partial => continue,
+                httparse::Status::Complete(_) => break
+            }
+        };
+
         let mut headers = [httparse::EMPTY_HEADER; 8];
         let mut request = httparse::Request::new(&mut headers);
-    
-        let read = stream.read(&mut buffer).await?;
-        match request.parse(&buffer[..read])? {
-            httparse::Status::Partial => Err(Error::http_too_long(&MAX_HTTP_LENGTH)),
-            httparse::Status::Complete(offset) => {
-                
-                let mut data = buffer[offset..read].to_vec();
-                let initial_length = data.len();
+            
+        let mut remaining = match request.parse(&buffer)? {
+            httparse::Status::Partial => Err(Error::http_too_long(&MAX_HTTP_LENGTH))?,
+            httparse::Status::Complete(offset) => buffer[offset..].to_vec()
+        };
 
-                let content_length: usize = 
-                    match request.headers.iter()
-                    .find(|h| h.name.to_lowercase() == "content-length")
-                    .ok_or(Error::malformed_request("Manjka content-length")) {
-                        Ok(header) => from_utf8(&header.value)?.parse()?,
-                        Err(_) => 0 
-                };
+        let content_length: usize = 
+            match request.headers.iter()
+            .find(|h| h.name.to_lowercase() == "content-length")
+            .ok_or(Error::malformed_request("Manjka content-length")) {
+                Ok(header) => from_utf8(&header.value)?.parse()?,
+                Err(_) => 0 
+        };
 
-                data.resize(content_length, 0);
-                stream.read_exact(&mut data[initial_length..]).await?;
+        let pre_len = remaining.len();
+        remaining.resize(content_length, 0);
+        if pre_len < content_length {
+            stream.read_exact(&mut remaining[pre_len..]).await?;
+        }
 
-                match request.path {
-                    None => Err(Error::missing_path("NULL")),
-                    Some(path) => {
-                        Ok((path.to_string(), data))
-                    }
-                }
+        match request.path {
+            None => Err(Error::missing_path("NULL")),
+            Some(path) => {
+                Ok((path.to_string(), remaining.clone()))
             }
         }
     }
 
     pub async fn read_http_response(stream: &mut TcpStream) -> Result<(String, u16, Vec<u8>)> {
-        let mut buffer = [0; MAX_HTTP_LENGTH];  /* 16 kB max */
-    
+
+        let mut buffer = vec![]; /* 16 kB max */
+        
+        loop {
+            let mut headers = [httparse::EMPTY_HEADER; 8];
+            let mut response = httparse::Response::new(&mut headers);
+
+            {
+                let mut buffer_tmp = [0; MAX_HTTP_LENGTH];
+                let read_current = stream.read(&mut buffer_tmp).await?;
+
+                buffer.extend_from_slice(&buffer_tmp[..read_current]);
+            }
+            
+            match response.parse(&buffer)? {
+                httparse::Status::Partial => continue,
+                httparse::Status::Complete(_) => break
+            }
+        };
+
         let mut headers = [httparse::EMPTY_HEADER; 8];
         let mut response = httparse::Response::new(&mut headers);
+            
+        let mut remaining = match response.parse(&buffer)? {
+            httparse::Status::Partial => Err(Error::http_too_long(&MAX_HTTP_LENGTH))?,
+            httparse::Status::Complete(offset) => buffer[offset..].to_vec()
+        };
+
+        let content_length: usize = 
+            match response.headers.iter()
+            .find(|h| h.name.to_lowercase() == "content-length")
+            .ok_or(Error::malformed_request("Manjka content-length")) {
+                Ok(header) => from_utf8(&header.value)?.parse()?,
+                Err(_) => 0 
+        };
+
+        let pre_len = remaining.len();
+        remaining.resize(content_length, 0);
+        if pre_len < content_length {
+            stream.read_exact(&mut remaining[pre_len..]).await?;
+        }
     
-        let read = stream.read(&mut buffer).await?;
-        match response.parse(&buffer[..read])? {
-            httparse::Status::Partial => Err(Error::http_too_long(&MAX_HTTP_LENGTH)),
-            httparse::Status::Complete(offset) => {
-
-                let mut data = buffer[offset..read].to_vec();
-                let initial_length = data.len();
-
-                let content_length = response.headers.iter()
-                    .find(|h| h.name.to_lowercase() == "content-length")
-                    .ok_or(Error::malformed_request("Manjka content-length"))?.value;
-
-                let content_length: usize = from_utf8(&content_length)?.parse()?;
-
-                data.resize(content_length, 0);
-                stream.read_exact(&mut data[initial_length..]).await?;
-
-                match (response.reason, response.code) {
-                    (Some(reason), Some(code)) => Ok((reason.to_owned(), code, data)),
-                    _ => Err(Error::http_missing_response())
-                }
-            }
+        match (response.reason, response.code) {
+            (Some(reason), Some(code)) => Ok((reason.to_owned(), code, remaining)),
+            _ => Err(Error::http_missing_response())
         }
     }
 }
