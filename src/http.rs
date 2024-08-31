@@ -31,11 +31,10 @@ pub mod read {
                 data.resize(content_length, 0);
                 stream.read_exact(&mut data[initial_length..]).await?;
 
-                let buffer = &buffer[offset..read];
                 match request.path {
                     None => Err(Error::missing_path("NULL")),
                     Some(path) => {
-                        Ok((path.to_string(), buffer.to_vec()))
+                        Ok((path.to_string(), data))
                     }
                 }
             }
