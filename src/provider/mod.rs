@@ -5,7 +5,7 @@ use crate::parse::remote::Remote;
 use misc::{ConstantSequenceProvider, DropSequenceProvider, LinearRecursionHSequenceProvider, PowerModSequenceProvider};
 use rand::seq::SliceRandom;
 use async_trait::async_trait;
-use function::{ArithmeticSequence, FunctionSequenceProvider, GeometricSequence};
+use function::{ArithmeticSequence, FunctionSequenceProvider, GeometricSequence, PEulerSequence};
 use tokio::sync::RwLock;
 
 
@@ -57,6 +57,7 @@ impl ProviderManager {
                 Box::new(LinearRecursionHSequenceProvider::new(3)),
                 Box::new(LinearRecursionHSequenceProvider::new(4)),
                 Box::new(PowerModSequenceProvider {}),
+                Box::new(FunctionSequenceProvider::new(Box::new(PEulerSequence::new()))),
             ]),
             remote_providers: vec![],
             generator: generator.clone(),

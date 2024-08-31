@@ -1,5 +1,5 @@
 use std::vec;
-use crate::{error::error::{Error, Result}, parse::sequence_provide::{self}};
+use crate::{error::error::{Error, Result}, parse::sequence_provide::{self, SequenceInfo}};
 
 use super::SequenceProvider;
 
@@ -77,5 +77,54 @@ impl FunctionSequence for GeometricSequence {
         } else {
             Ok(parameters[0] * parameters[1].powf(n as f64))
         }
+    }
+}
+
+pub struct PEulerSequence {
+    cycle: Vec<f64>
+}
+impl PEulerSequence {
+
+    fn get_bit(num: u8, i: u8) -> bool {
+        (num >> i) % 2 == 1
+    }
+
+    pub fn new() -> Self {
+        let fermat = [3.,5.,17.,257.,65537.];
+        let mut cycle = vec![1.];
+
+        // dodamo produkte fermata
+        for i in 1..(2 as u8).pow(fermat.len() as u32) {
+            let mut val: f64 = 1.;
+            for j in 0..fermat.len() {
+                if Self::get_bit(i, j as u8) {
+                    val *= fermat[j];
+                }
+            }
+            cycle.push(val);
+        }
+
+        Self { cycle }
+    } 
+}
+impl FunctionSequence for PEulerSequence {
+    fn get_info(&self) -> sequence_provide::SequenceInfo {
+        SequenceInfo {
+            name: "p_euler".to_owned(),
+            description: "(Najverjetneje) V dokaj naključnem vrstnem redu števila M za katere je phi(M) potenca praštevila. phi(n) je Eulerjeva funkcija fi.".to_owned(),
+            parameters: 0,
+            sequences: 0
+        }
+    }
+
+    fn evaluate(&self, _parameters: &[f64], n: u64) -> Result<f64> {
+        let n: i32 = n.try_into()?;
+        let len: i32 = self.cycle.len().try_into()?;
+
+        // Zadnja števka v bazi len izbere produkt fermatovih, preostali del pa eksponent števila 2
+        let exp = n / len;
+        let rem: usize = (n % len).try_into()?;
+        
+        Ok(self.cycle[rem]*(2. as f64).powi(exp))
     }
 }

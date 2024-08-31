@@ -35,7 +35,7 @@ async fn route_generator(stream: &mut TcpStream, registered: &RwLock<HashSet<Rem
 }
 
 #[tokio::main]
-async fn main() -> Result<()>{
+async fn main() -> Result<()> {
     let settings = settings::SettingsCentralni::parse();
 
     let info = Arc::new(Remote::new("Centralni strežnik", &settings.ip.to_string(), settings.port)?);
