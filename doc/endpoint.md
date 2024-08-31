@@ -62,7 +62,7 @@ Vrne response, ki pove, da je centrali strežnik še online:
 }
 ```
 
-### ```GET /sequence/```
+### ```GET /generator/```
 Get request **ne sme** imeti telesa. 
 Vrne response, ki vsebuje podatke o vseh registriranih ponudnikih, ki jih ponuja ta generator.
 ```json
@@ -76,7 +76,7 @@ Vrne response, ki vsebuje podatke o vseh registriranih ponudnikih, ki jih ponuja
 ]
 ```
 
-### ```POST /sequence/```
+### ```POST /generator/```
 Telo POST requesta naj bo oblike:
 ```json
 {

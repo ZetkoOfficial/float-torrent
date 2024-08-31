@@ -16,6 +16,21 @@ pub mod read {
         match request.parse(&buffer[..read])? {
             httparse::Status::Partial => Err(Error::http_too_long(&MAX_HTTP_LENGTH)),
             httparse::Status::Complete(offset) => {
+                
+                let mut data = buffer[offset..read].to_vec();
+                let initial_length = data.len();
+
+                let content_length: usize = 
+                    match request.headers.iter()
+                    .find(|h| h.name.to_lowercase() == "content-length")
+                    .ok_or(Error::malformed_request("Manjka content-length")) {
+                        Ok(header) => from_utf8(&header.value)?.parse()?,
+                        Err(_) => 0 
+                };
+
+                data.resize(content_length, 0);
+                stream.read_exact(&mut data[initial_length..]).await?;
+
                 let buffer = &buffer[offset..read];
                 match request.path {
                     None => Err(Error::missing_path("NULL")),
