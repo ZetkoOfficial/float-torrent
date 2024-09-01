@@ -38,20 +38,18 @@ Content-Length: {dolzina_body}
 ```
 
 ## Branje HTTP 
-Zahtevamo, da je headerjev najevč 8 in da je request brez `body` velik največ 16KB.
+Zahtevamo, da je headerjev najevč 16 v HTTP verziji 1.1.
 
 ### Branje Requesta
-Tukaj dodatno zahtevamo še, da je celoten request velik največ 16KB.
-
 Trenutna implementacija ne loči med `GET` in `POST`, ampak zahteva v primeru, da uporabnik 
-želi narediti `GET` request, da je `body` prazen.
+želi narediti `GET` request, da je `body` prazen. (Če uporabnik sledi specifikaciji v učilnici to ne bo povzorčilo težav)  
 
 ### Branje Response
-Tukaj dodatno zahtevano da ima response header `Content-Length`, lahko pa ima `body` poljubne velikosti (tudi večji od 16KB). 
+Zahtevamo, da ima response header `Content-Length`, če ima nek body.
 
 # Zahteva po zaporedjih
-Kadar od našo implementacije ponudnika zahtevamo zaporedje s specifično signaturo
-najprej preveri, če to zaporedje implementria že lokalno. Če ga, potem uporabi lokalno implementacijo, če ne, pa preveri svoj lokalni register oddaljenih ponudnikov zaporedij in izmed njih izbere nakjučnega, ki se ujema s signaturo.
+Kadar od naše implementacije ponudnika zahtevamo zaporedje s specifično signaturo
+najprej preveri, če to zaporedje implementira že lokalno. Če ga, potem uporabi lokalno implementacijo, če ne, pa preveri svoj lokalni register oddaljenih ponudnikov zaporedij in izmed njih izbere nakjučnega, ki se ujema s signaturo.
 
 V primeru, da oddaljeni (remote) ponudnik vrne error, potem error preposreduje uporabniku in **ne poskusi znova**, to je na uporabniku/centralnemu strežniku
 (da morda blacklista ali odregistrira ponudnika).

@@ -1,7 +1,7 @@
 # Veljavni endpointi
 
-Noben HTTP request ne sme biti večji od 16KB, in vsebovati več 
-kot 8 headerjev. Pomembno je tudi, da se vsak endpoint konča z znakom `/`.
+Noben HTTP request ne sme vsebovati več kot 8 headerjev. 
+Pomembno je tudi, da se vsak endpoint konča z znakom `/`.
 
 ## Ponudnik
 
