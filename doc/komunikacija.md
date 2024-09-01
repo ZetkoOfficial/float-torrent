@@ -2,7 +2,7 @@
 Ponudnik lahko komunicira z drugimi ponudniki, centralnim strežnikom ali uporabnikom preko HTTP protokola. Med komunikacijo se lahko zgodijo napake, ki jih ta implementacija vrne kot JSON oblike s statusom ```400 Bad Request```.
 ```json
 {
-  "error_type": "<vrsta napake>",
+  "error": "<vrsta napake>",
   "message": "<opis napake>",
   "extra": <json dodatnih podatkov o napaki>/null
 }

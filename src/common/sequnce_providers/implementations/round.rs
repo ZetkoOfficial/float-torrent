@@ -18,7 +18,7 @@ impl OperationSequence for Sequence {
 
     fn apply(&self, parameters: &[f64], sequences: &[f64]) -> Result<f64> {
         if sequences.len() != 1 || parameters.len() != 1 {
-            Err(Error::sequence_arithmetic_error("Številu parametrov ali zaporedij je nepravilno."))
+            Err(Error::sequence_arithmetic_error(self.get_info(), "Številu parametrov ali zaporedij je nepravilno."))
         } else {
             let factor = (10 as f64).powf(parameters[0]);
             Ok((factor * sequences[0]).round()/factor)

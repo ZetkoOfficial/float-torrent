@@ -18,7 +18,7 @@ impl SequenceProvider for Provider {
 
     fn generate(&self, range: sequence_provide::Range, parameters: &[f64], _sequences: &[Vec<f64>]) -> Result<Vec<f64>> {
         let mut result = vec![];
-        if parameters[0] < 0. || parameters[1] < 0. || parameters[2] <= 0.  { return Err(Error::sequence_arithmetic_error("Neveljavni parametri")); }        
+        if parameters[0] < 0. || parameters[1] < 0. || parameters[2] <= 0.  { return Err(Error::sequence_arithmetic_error(self.get_info(), "Neveljavni parametri")); }        
         let (mut a, p, m): (u32, u32, u32) = (parameters[0].trunc() as u32, parameters[1].trunc() as u32, parameters[2].trunc() as u32);
 
         let mut i = 0; 

@@ -17,7 +17,7 @@ pub struct OperationSequenceProvider {
 impl OperationSequenceProvider {
     fn combine(&self, length: usize, parameters: &[f64], sequences: &[Vec<f64>]) -> Result<Vec<f64>> {
         if !sequences.iter().all(|s| s.len() == length) { 
-            Err(Error::sequence_arithmetic_error("Pridobljene dolžine zaporedij se ne ujemajo"))
+            Err(Error::sequence_arithmetic_error(self.get_info(), "Pridobljene dolžine zaporedij se ne ujemajo"))
         } else {
             let mut result = vec![];
 

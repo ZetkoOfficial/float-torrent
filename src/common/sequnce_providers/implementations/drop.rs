@@ -27,7 +27,7 @@ impl SequenceProvider for Provider {
     // modificiramo Range v requestu in prepošljemo naprej
     async fn provide(&self, request: sequence_provide::Request, manager: &RwLock<ProviderManager>) -> Result<Vec<f64>> {
         let drop_count = request.parameters[0].trunc();
-        if drop_count < 0. { return Err(Error::sequence_arithmetic_error("Parameter mora biti pozitiven")); }
+        if drop_count < 0. { return Err(Error::sequence_arithmetic_error(self.get_info(), "Parameter mora biti pozitiven")); }
         let drop_count = drop_count as u64;
 
         let sequence = request.sequences[0].clone();

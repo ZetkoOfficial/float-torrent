@@ -34,7 +34,7 @@ pub trait SequenceProvider : Sync {
     }
 }
 pub struct ProviderManager {
-    local_providers:    Vec<Box<dyn SequenceProvider + Send>>,
+    pub local_providers:    Vec<Box<dyn SequenceProvider + Send>>,
     remote_providers:   Vec<Box<dyn SequenceProvider + Send>>,
     generator:          Remote,
     central:            Remote

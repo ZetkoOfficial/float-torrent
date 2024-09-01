@@ -17,7 +17,7 @@ impl FunctionSequence for Sequence {
 
     fn evaluate(&self, parameters: &[f64], n: u64) -> Result<f64> {
         if parameters.len() != 2 {
-            Err(Error::sequence_arithmetic_error("Potrebna sta parametra `a0` in `q`."))
+            Err(Error::sequence_arithmetic_error(self.get_info(),"Potrebna sta parametra `a0` in `q`."))
         } else {
             Ok(parameters[0] * parameters[1].powf(n as f64))
         }

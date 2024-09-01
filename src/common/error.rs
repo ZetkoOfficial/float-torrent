@@ -10,13 +10,12 @@ use crate::common::{http, parse::{parse_helper::Sendable, sequence_provide}};
 #[allow(dead_code)]
 pub enum ErrorType {
     IOError,
+    JSONParseError,
     GenericParseError,
     HttpParseError,
-    SerdeError,
     HttpRequestTooShort,
     MissingPath,
     MissingProvider,
-    SequenceArithmeticError,
     RemoteError,
     Timeout,
     ArithmeticError,
@@ -24,7 +23,7 @@ pub enum ErrorType {
 
 #[derive(Debug, Serialize)]
 pub struct Error {
-    error_type: ErrorType,
+    error: ErrorType,
     message:    String,
     extra:      Option<serde_json::Value>
 }
@@ -33,7 +32,7 @@ pub type Result<T> = result::Result<T, Error>;
 impl From<io::Error> for Error {
     fn from(value: io::Error) -> Self {
         Error {
-            error_type: ErrorType::IOError,
+            error: ErrorType::IOError,
             message: value.to_string(),
             extra: None
         }
@@ -42,7 +41,7 @@ impl From<io::Error> for Error {
 impl From<httparse::Error> for Error {
     fn from(value: httparse::Error) -> Self {
         Error {
-            error_type: ErrorType::HttpParseError,
+            error: ErrorType::HttpParseError,
             message: value.to_string(),
             extra: None
         }
@@ -52,7 +51,7 @@ impl From<httparse::Error> for Error {
 impl From<serde_json::Error> for Error {
     fn from(value: serde_json::Error) -> Self {
         Error {
-            error_type: ErrorType::SerdeError,
+            error: ErrorType::JSONParseError,
             message: value.to_string(),
             extra: None
         }
@@ -62,7 +61,7 @@ impl From<serde_json::Error> for Error {
 impl From<Utf8Error> for Error {
     fn from(value: Utf8Error) -> Self {
         Error {
-            error_type: ErrorType::HttpParseError,
+            error: ErrorType::HttpParseError,
             message: value.to_string(),
             extra: None
         }
@@ -72,7 +71,7 @@ impl From<Utf8Error> for Error {
 impl From<ParseIntError> for Error {
     fn from(value: ParseIntError) -> Self {
         Error {
-            error_type: ErrorType::GenericParseError,
+            error: ErrorType::GenericParseError,
             message: value.to_string(),
             extra: None
         }
@@ -82,7 +81,7 @@ impl From<ParseIntError> for Error {
 impl From<AddrParseError> for Error {
     fn from(value: AddrParseError) -> Self {
         Error {
-            error_type: ErrorType::GenericParseError,
+            error: ErrorType::GenericParseError,
             message: value.to_string(),
             extra: None
         }
@@ -92,7 +91,7 @@ impl From<AddrParseError> for Error {
 impl From<Elapsed> for Error {
     fn from(value: Elapsed) -> Self {
         Error {
-            error_type: ErrorType::Timeout,
+            error: ErrorType::Timeout,
             message: value.to_string(),
             extra: None
         }
@@ -102,7 +101,7 @@ impl From<Elapsed> for Error {
 impl From<TryFromIntError> for Error {
     fn from(value: TryFromIntError) -> Self {
         Error {
-            error_type: ErrorType::ArithmeticError,
+            error: ErrorType::ArithmeticError,
             message: value.to_string(),
             extra: None
         }
@@ -113,7 +112,7 @@ impl Sendable for Error {}
 impl Error {
     pub fn missing_path(path: &str) -> Self {
         Error { 
-            error_type: ErrorType::MissingPath, 
+            error: ErrorType::MissingPath, 
             message: "Zahtevna pot nima routerja".to_owned(), 
             extra: Some(
                 serde_json::from_str(&format!(r#" {{"path": "{path}"}} "#)).unwrap()
@@ -123,7 +122,7 @@ impl Error {
 
     pub fn http_too_long(max_length: &usize) -> Self {
         Error { 
-            error_type: ErrorType::HttpRequestTooShort, 
+            error: ErrorType::HttpRequestTooShort, 
             message: "HTTP request je predolg".to_owned(), 
             extra: Some(
                 serde_json::from_str(&format!(r#" {{"max_length": "{max_length}"}} "#)).unwrap()
@@ -133,7 +132,7 @@ impl Error {
 
     pub fn missing_provider(seq: sequence_provide::SequenceInfo, close: &[sequence_provide::SequenceInfo]) -> Self {
         Error { 
-            error_type: ErrorType::MissingProvider, 
+            error: ErrorType::MissingProvider, 
             message: "Ponudnik zaporedja ni najden. Blizu so so spodnji ponudniki.".to_owned(), 
             extra: Some(
                 json!({
@@ -144,19 +143,22 @@ impl Error {
         }
     }
 
-    pub fn sequence_arithmetic_error(extra: &str) -> Self {
+    pub fn sequence_arithmetic_error(seq: sequence_provide::SequenceInfo, extra: &str) -> Self {
         Error { 
-            error_type: ErrorType::SequenceArithmeticError, 
+            error: ErrorType::ArithmeticError, 
             message: "Napaka pri računanju členov".to_owned(), 
             extra: Some(
-                serde_json::Value::String(extra.to_owned())
+                json!({
+                    "_sequence": seq,
+                    "info": extra 
+                })
             ) 
         }
     }
 
     pub fn http_missing_response() -> Self {
         Error { 
-            error_type: ErrorType::HttpParseError, 
+            error: ErrorType::HttpParseError, 
             message: "Manjkajoč reason/code pri response-u.".to_owned(), 
             extra: None 
         }
@@ -164,7 +166,7 @@ impl Error {
     
     pub fn invalid_range() -> Self {
         Error {
-            error_type: ErrorType::SerdeError,
+            error: ErrorType::GenericParseError,
             message: "Neveljaven range".to_owned(),
             extra: None
         }
@@ -172,7 +174,7 @@ impl Error {
 
     pub fn malformed_request(extra: &str) -> Self {
         Error {
-            error_type: ErrorType::HttpParseError,
+            error: ErrorType::HttpParseError,
             message: "HTTP zahteva ni veljavne oblike.".to_owned(),
             extra: Some(serde_json::Value::String(extra.to_owned()))
         }
@@ -181,11 +183,11 @@ impl Error {
     pub fn remote_invalid_response(url: &str, error: &[u8]) -> Self {
         let error_json: Option<serde_json::Value> = serde_json::from_slice(error).ok();
         Error {
-            error_type: ErrorType::RemoteError,
+            error: ErrorType::RemoteError,
             message: "Remote se je odzval narobe.".to_owned(),
             extra: Some(json!({
-                "url":      serde_json::Value::String(url.to_owned()),
-                "error":    error_json
+                "_url":      serde_json::Value::String(url.to_owned()),
+                "info":    error_json
             }))
         }
     }

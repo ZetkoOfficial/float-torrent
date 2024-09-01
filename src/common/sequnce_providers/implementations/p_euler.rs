@@ -48,7 +48,7 @@ impl SequenceProvider for Provider {
         let mut i = 0;  // rabimo iti čez vse, in sproti pobiramo iskane
         while i < range.to {
             let top = heap.pop()
-                .ok_or(Error::sequence_arithmetic_error("Prazen min-heap, nepričakovana napaka."))?.0.0;
+                .ok_or(Error::sequence_arithmetic_error(self.get_info(), "Prazen min-heap, nepričakovana napaka."))?.0.0;
             
             // če je v našem range-u, ga dodamo, potem pa v heap dodamo dvakratnik
             if range.from <= i && (i-range.from) % range.step == 0 { result.push(top); } 

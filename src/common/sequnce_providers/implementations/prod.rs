@@ -19,7 +19,7 @@ impl OperationSequence for Sequence {
 
     fn apply(&self, _parameters: &[f64], sequences: &[f64]) -> Result<f64> {
         if sequences.len() != 2 {
-            Err(Error::sequence_arithmetic_error("Številu parametrov ali zaporedij je nepravilno."))
+            Err(Error::sequence_arithmetic_error(self.get_info(), "Številu parametrov ali zaporedij je nepravilno."))
         } else {
             Ok(sequences[0] * sequences[1])
         }
