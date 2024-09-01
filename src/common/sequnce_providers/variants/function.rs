@@ -38,3 +38,23 @@ impl SequenceProvider for FunctionSequenceProvider {
         Ok(result)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::sequnce_providers::{implementations::*, SequenceProvider};
+    use super::FunctionSequenceProvider;
+
+    #[test]
+    fn test() {
+        let fs = FunctionSequenceProvider::new(Box::new(arithmetic::Sequence {}));
+
+        assert_eq!(
+            fs.generate(crate::parse::sequence_provide::Range { from: 4, to: 10, step: 3 }, &[0., 2.], &[]),
+            Ok(vec![8., 14.])
+        );
+        assert_eq!(
+            fs.generate(crate::parse::sequence_provide::Range { from: 0, to: 10, step: 1 }, &[0., 2.], &[]),
+            Ok(vec![0., 2., 4., 6., 8., 10., 12., 14., 16., 18.])
+        );
+    }
+}

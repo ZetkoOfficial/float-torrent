@@ -37,3 +37,17 @@ impl SequenceProvider for Provider {
         Ok(result.iter().map(|v| *v as f64).collect())
     }
 }
+
+#[test]
+fn test() {
+    let fs = Provider {};
+    assert_eq!(
+        fs.generate(sequence_provide::Range { from: 0, to: 4, step: 1 }, &[2., 2., 17.], &[]),
+        Ok(vec![2.,4.,16.,1.])
+    );
+
+    assert_eq!(
+        fs.generate(sequence_provide::Range { from: 0, to: 4, step: 2 }, &[2., 2., 17.], &[]),
+        Ok(vec![2.,16.])
+    );
+}

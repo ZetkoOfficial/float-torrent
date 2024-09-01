@@ -60,3 +60,12 @@ impl SequenceProvider for Provider {
         Ok(result) 
     }
 }
+
+#[test]
+fn test() {
+    let fs = Provider::new();
+    assert_eq!(
+        fs.generate(sequence_provide::Range { from: 2, to: 15, step: 2 }, &[], &[]),
+        Ok(vec![3.,5.,8.,12.,16.,20.,30.])
+    );
+}

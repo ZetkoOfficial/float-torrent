@@ -21,3 +21,12 @@ impl OperationSequence for Sequence {
         Ok(sequences[0] * sequences[1])
     }
 }
+
+#[test]
+fn test() {
+    let fs = Sequence {};
+    assert_eq!(
+        fs.apply(&[], &[4.,13.]),
+        Ok(52.)
+    );
+}

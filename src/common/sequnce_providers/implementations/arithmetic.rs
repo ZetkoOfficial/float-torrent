@@ -24,3 +24,11 @@ impl FunctionSequence for Sequence {
         }
     }
 }
+
+#[test]
+fn test() {
+    let fs = Sequence {};
+    assert_eq!(fs.evaluate(&[-4.,8.], 3), Ok(20.));
+    assert_eq!(fs.evaluate(&[4.,8.], 3), Ok(28.));
+    assert_eq!(fs.evaluate(&[1.,-2.], 13), Ok(-25.));
+}

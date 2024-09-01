@@ -1,3 +1,5 @@
+use std::vec;
+
 use nalgebra::{DMatrix, DVector};
 
 use crate::{
@@ -60,4 +62,19 @@ impl SequenceProvider for Provider {
         }
         Ok(result)
     }
+}
+
+#[test]
+fn test() {
+    let fs = Provider::new(1);
+    assert_eq!(
+        fs.generate(sequence_provide::Range { from: 0, to: 10, step: 2 }, &[2., 1.], &[]),
+        Ok(vec![1.,4.,16.,64.,256.])
+    );
+
+    let fs = Provider::new(2);
+    assert_eq!(
+        fs.generate(sequence_provide::Range { from: 1, to: 10, step: 1 }, &[1.,1.,0.,1.], &[]),
+        Ok(vec![1.,1.,2.,3.,5.,8.,13.,21.,34.])
+    );
 }

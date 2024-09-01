@@ -6,7 +6,7 @@ use tokio::{net::TcpStream, time::error::Elapsed};
 
 use crate::{http, parse::{parse_helper::Sendable, sequence_provide}};
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq)]
 #[allow(dead_code)]
 pub enum ErrorType {
     IOError,
@@ -21,9 +21,9 @@ pub enum ErrorType {
     ArithmeticError,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct Error {
-    error: ErrorType,
+    error:      ErrorType,
     message:    String,
     extra:      Option<serde_json::Value>
 }

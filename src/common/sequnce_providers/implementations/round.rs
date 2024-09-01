@@ -21,3 +21,20 @@ impl OperationSequence for Sequence {
         Ok((factor * sequences[0]).round()/factor)
     }
 }
+
+#[test]
+fn test() {
+    let fs = Sequence {};
+    assert_eq!(
+        fs.apply(&[0.], &[37.374]),
+        Ok(37.)
+    );
+    assert_eq!(
+        fs.apply(&[-1.], &[37.374]),
+        Ok(40.)
+    );
+    assert_eq!(
+        fs.apply(&[1.], &[37.374]),
+        Ok(37.4)
+    );
+}

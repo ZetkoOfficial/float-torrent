@@ -26,3 +26,16 @@ impl SequenceProvider for Provider {
         Ok(result) 
     }
 }
+
+#[test]
+fn test() {
+    let fs = Provider {};
+    assert_eq!(
+        fs.generate(sequence_provide::Range { from: 13, to: 26, step: 2 }, &[5.], &[]),
+        Ok(vec![5.,5.,5.,5.,5.,5.,5.])
+    );
+    assert_eq!(
+        fs.generate(sequence_provide::Range { from: 13, to: 16, step: 1 }, &[-14.], &[]),
+        Ok(vec![-14.,-14.,-14.])
+    );
+}

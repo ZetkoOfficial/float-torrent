@@ -51,3 +51,19 @@ impl SequenceProvider for OperationSequenceProvider {
         Ok(self.combine(sequences[0].len(), parameters, sequences)?)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::sequnce_providers::{implementations::*, SequenceProvider};
+    use super::OperationSequenceProvider;
+
+    #[test]
+    fn test() {
+        let fs = OperationSequenceProvider::new(Box::new(max_seqs::Sequence {}));
+
+        assert_eq!(
+            fs.generate(crate::parse::sequence_provide::Range { from: 0, to: 4, step: 1 }, &[], &[vec![1.,4.,8.,13.], vec![3.,2.,13.,1.]]),
+            Ok(vec![3.,4.,13.,13.])
+        );
+    }
+}
