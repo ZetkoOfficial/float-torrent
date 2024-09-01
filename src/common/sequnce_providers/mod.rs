@@ -11,7 +11,9 @@ use crate::common::{
     parse::{parse_helper::Sendable, remote::Remote, 
     sequence_provide::{self, SequenceInfo}}
 };
-use variants::{function::*, misc::*, operation::*};
+
+use variants::{function::*, operation::*};
+use implementations::*;
 
 #[async_trait]
 pub trait SequenceProvider : Sync {
@@ -42,20 +44,20 @@ impl ProviderManager {
     pub fn new(generator: &Remote, central: &Remote) -> Self {
         ProviderManager { 
             local_providers: (vec! [
-                Box::new(ConstantSequenceProvider {}),
-                Box::new(DropSequenceProvider {}),
-                Box::new(OperationSequenceProvider::new(Box::new(SumSequence {}))),
-                Box::new(OperationSequenceProvider::new(Box::new(ProductSequence {}))),
-                Box::new(OperationSequenceProvider::new(Box::new(LinComSequence {}))),
-                Box::new(OperationSequenceProvider::new(Box::new(RoundSequence {}))),
-                Box::new(FunctionSequenceProvider::new(Box::new(ArithmeticSequence {}))),
-                Box::new(FunctionSequenceProvider::new(Box::new(GeometricSequence {}))),
-                Box::new(LinearRecursionHSequenceProvider::new(1)),
-                Box::new(LinearRecursionHSequenceProvider::new(2)),
-                Box::new(LinearRecursionHSequenceProvider::new(3)),
-                Box::new(LinearRecursionHSequenceProvider::new(4)),
-                Box::new(PowerModSequenceProvider {}),
-                Box::new(PEulerSequenceProvider::new()),
+                Box::new(constant::Provider {}),
+                Box::new(drop::Provider {}),
+                Box::new(OperationSequenceProvider::new(Box::new(sum::Sequence {}))),
+                Box::new(OperationSequenceProvider::new(Box::new(prod::Sequence {}))),
+                Box::new(OperationSequenceProvider::new(Box::new(lin_com::Sequence {}))),
+                Box::new(OperationSequenceProvider::new(Box::new(round::Sequence {}))),
+                Box::new(FunctionSequenceProvider::new(Box::new(arithmetic::Sequence {}))),
+                Box::new(FunctionSequenceProvider::new(Box::new(geometric::Sequence {}))),
+                Box::new(linear_recursion_h::Provider::new(1)),
+                Box::new(linear_recursion_h::Provider::new(2)),
+                Box::new(linear_recursion_h::Provider::new(3)),
+                Box::new(linear_recursion_h::Provider::new(4)),
+                Box::new(power_mod::Provider {}),
+                Box::new(p_euler::Provider::new()),
             ]),
             remote_providers: vec![],
             generator: generator.clone(),
@@ -128,7 +130,7 @@ impl ProviderManager {
     } 
 }
 
-// ---------- implementacije nekaj posebnih primerov ----------
+// ---------- implementacije posebnega primera za oddaljene ponudnike ----------
 
 struct RemoteSequenceProvider {
     host:   Remote,
