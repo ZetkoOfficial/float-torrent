@@ -1,12 +1,14 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
-
 use clap::Parser;
-use float_torrent::parse::remote::Remote;
-use float_torrent::parse::settings;
-use float_torrent::{http, error::error::{Error, Result}};
 use tokio::{net::{TcpListener, TcpStream}, sync::RwLock};
+
+use float_torrent::common::{
+    parse::{settings, remote::Remote},
+    error::{Error, Result},
+    http,
+};
 
 async fn route_ping (stream: &mut TcpStream, info: &Remote) -> Result<()> {
     http::write::write_http("200 OK", &serde_json::to_vec_pretty(info)?, stream).await?;

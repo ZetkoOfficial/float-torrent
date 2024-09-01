@@ -17,7 +17,7 @@ Lokalno so implementrirana naslednja zaporedja:
 | `lin_com`            | Linearna kombinacija zaporedij |
 | `round`              | Zaporedje zaokroženo na nekaj decimalk |
 | `power_mod`          | Veriga, ki jo dobimo, če z nekim številom začnemo, ga potenciramo s $p$ v nekem kolobarju $\mathbb{Z}_M$ in ta postopek nadaljujemo
-| `p_euler`            | (Najverjetneje) Po velikosti urejeni $M$ za katere je $\varphi(M)$ potenca nekega praštevila. Alternativno elementi oblike $2^{\alpha} \prod f_{\delta_i}$, kjer so $f_{\delta_i}$ različna fermatova praštevila.
+| `p_euler`            | (Najverjetneje) V dokaj naključnem vrstnem redu urejena števila $M$ za katere je $\varphi(M)$ potenca nekega praštevila. Alternativno elementi oblike $2^{\alpha} \prod f_{\delta_i}$, kjer so $f_{\delta_i}$ različna fermatova praštevila.
 
 Več o njihovem delovanju in signaturi, si lahko preberete na
 endpointu `GET /sequence/` ponudnika.

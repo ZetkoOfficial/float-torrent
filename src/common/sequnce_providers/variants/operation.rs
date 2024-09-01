@@ -1,6 +1,8 @@
-use crate::{error::error::{Error, Result}, parse::sequence_provide::{self}};
-
-use super::SequenceProvider;
+use crate::common::{
+    error::{Error, Result}, 
+    parse::sequence_provide::{self}, 
+    sequnce_providers::SequenceProvider
+};
 
 /// Zaporedje, ki ga lahko predstavimo kot neka operacija nad istoležečimi členi drugih zaporedih
 pub trait OperationSequence : Sync + Send {

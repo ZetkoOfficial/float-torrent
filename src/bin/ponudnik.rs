@@ -1,13 +1,15 @@
 use std::sync::Arc;
 use std::time::Duration;
-
 use clap::Parser;
-use float_torrent::parse::remote::Remote;
-use float_torrent::parse::settings;
-use float_torrent::{parse::sequence_provide, provider::ProviderManager};
-use float_torrent::{http, error::error::{Error, Result}};
 use tokio::net::TcpListener;
 use tokio::{net::TcpStream, sync::RwLock};
+
+use float_torrent::common::{
+    parse::{remote::Remote, sequence_provide, settings}, 
+    sequnce_providers::ProviderManager, 
+    error::{Error, Result}, 
+    http
+};
 
 async fn route_sequence_generic(path: &str, data: &[u8], stream: &mut TcpStream, manager: &RwLock<ProviderManager>) -> Result<()> {
     let request = sequence_provide::parse_request(&data)?;

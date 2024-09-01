@@ -1,19 +1,17 @@
-use std::vec;
+pub mod variants;
+mod implementations;
 
-use crate::{error::error::{Error, Result}, parse::{parse_helper::Sendable, sequence_provide::{self, SequenceInfo}}};
-use crate::parse::remote::Remote;
-use misc::{ConstantSequenceProvider, DropSequenceProvider, LinearRecursionHSequenceProvider, PowerModSequenceProvider};
+use std::vec;
 use rand::seq::SliceRandom;
 use async_trait::async_trait;
-use function::{ArithmeticSequence, FunctionSequenceProvider, GeometricSequence, PEulerSequence};
 use tokio::sync::RwLock;
 
-
-use operation::{LinComSequence, OperationSequenceProvider, ProductSequence, RoundSequence, SumSequence};
-
-pub mod function;
-pub mod operation;
-pub mod misc;
+use crate::common::{
+    error::{Error, Result}, 
+    parse::{parse_helper::Sendable, remote::Remote, 
+    sequence_provide::{self, SequenceInfo}}
+};
+use variants::{function::*, misc::*, operation::*};
 
 #[async_trait]
 pub trait SequenceProvider : Sync {
@@ -57,7 +55,7 @@ impl ProviderManager {
                 Box::new(LinearRecursionHSequenceProvider::new(3)),
                 Box::new(LinearRecursionHSequenceProvider::new(4)),
                 Box::new(PowerModSequenceProvider {}),
-                Box::new(FunctionSequenceProvider::new(Box::new(PEulerSequence::new()))),
+                Box::new(PEulerSequenceProvider::new()),
             ]),
             remote_providers: vec![],
             generator: generator.clone(),

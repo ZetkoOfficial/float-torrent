@@ -54,8 +54,8 @@ pub mod remote {
     use serde::{Deserialize, Serialize};
     use tokio::net::TcpStream;
     use tokio::time::timeout;
-    use crate::error::{error::Result, error::Error};
-    use crate::http;
+    
+    use crate::common::{error::{Error, Result}, http};
 
     #[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, Eq)]
     pub struct Remote {
@@ -107,7 +107,7 @@ pub mod remote {
 
 pub mod sequence_provide {        
     use serde::{Deserialize, Serialize};
-    use crate::error::{error::Result, error::Error};
+    use crate::common::{error::Result, error::Error};
     use super::parse_helper::Sendable;
 
     #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
@@ -181,7 +181,7 @@ pub mod sequence_provide {
 }
 
 pub mod parse_helper {
-    use crate::error::error::Result;
+    use crate::common::error::Result;
 
     pub trait Sendable : serde::Serialize {
         fn as_sendable(&self) -> Result<Vec<u8>> {
