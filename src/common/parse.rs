@@ -13,6 +13,10 @@ pub mod settings {
         #[arg(long)]
         pub centralni_port: u16,
 
+        /// Ker je specifikacija različna, tu dopuščamo alternativne enpointe, za registracijo
+        #[arg(long, default_value_t=String::from("/project"))]
+        pub register_endpoint: String,
+
         /// IP naslov tega ponudnika (se uporablja za registracijo)
         #[arg(short, long, default_value_t=IpAddr::V4(Ipv4Addr::new(0,0,0,0)))]
         pub ip:      IpAddr,
@@ -40,6 +44,10 @@ pub mod settings {
         /// Port tega centralnega strežnika
         #[arg(short, long, default_value_t=9999)]
         pub port:    u16,
+
+        /// Ker je specifikacija različna, tu dopuščamo alternativne enpointe, za registracijo
+        #[arg(long, default_value_t=String::from("/project"))]
+        pub register_endpoint: String,
 
         /// Želen čas v sekundah, po katerem centralni strežnik ping-a vse registrirane, in jih v primeu neodzivnosti odstrani. 
         #[arg(short, default_value_t=60)]

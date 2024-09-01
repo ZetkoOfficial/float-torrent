@@ -72,15 +72,19 @@ async fn main() -> Result<()> {
         let (mut stream, _addr) = listener.accept().await?;
         let info = info.clone();
         let registered = registered.clone();
+        let register_endpoint = http::helper::remove_if_trailing(&settings.register_endpoint).to_string();
 
         tokio::spawn(async move {
             match http::read::read_http_request(&mut stream).await {
                 Err(err) => err.send_error(&mut stream).await,
                 Ok((path, data)) => {
-                    let result = match path.as_str() {
-                        "/generator/" => route_generator(&mut stream, &registered, &data).await,
-                        "/ping/"     => route_ping(&mut stream, &info).await,
-                        _ => { Error::missing_path(&path).send_error(&mut stream).await; Ok(()) }
+
+                    let path = http::helper::remove_if_trailing(path.as_str());
+
+                    let result = {
+                        if path == "/ping" { route_ping(&mut stream, &info).await }
+                        else if path == register_endpoint { route_generator(&mut stream, &registered, &data).await }
+                        else { Err(Error::missing_path(&path)) }
                     };
 
                     match result {

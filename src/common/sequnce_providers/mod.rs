@@ -125,10 +125,10 @@ impl ProviderManager {
     }
 
     /// Posodobi vse oddaljene ponudnike zaporedij
-    pub async fn update_providers(manager: &RwLock<Self>) -> Result<()> {
+    pub async fn update_providers(register_endpoint: &str, manager: &RwLock<Self>) -> Result<()> {
         let generator = manager.read().await.generator.clone();
         let central_server = manager.read().await.central.clone();      
-        let (reason, status, data) = central_server.get("/generator/", None).await?;
+        let (reason, status, data) = central_server.get(register_endpoint, None).await?;
 
         if (reason, status) == ("OK".to_owned(), 200) {
             let list: Vec<Remote> = serde_json::from_slice(&data)?;
@@ -163,7 +163,7 @@ impl SequenceProvider for RemoteSequenceProvider {
     fn get_info(&self) -> sequence_provide::SequenceInfo { self.info.clone() }
 
     async fn provide(&self, request: sequence_provide::Request, _: &RwLock<ProviderManager>) -> Result<Vec<f64>> {
-        let endpoint = format!("/sequence/{}/", self.info.name);
+        let endpoint = format!("/sequence/{}", self.info.name);
         let (reason, status, data) = self.host.post(&endpoint, &request.as_sendable()?, None).await?;
 
         if (reason, status) == ("OK".to_owned(), 200) {

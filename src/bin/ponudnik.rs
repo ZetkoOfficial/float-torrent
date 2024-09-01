@@ -34,8 +34,8 @@ async fn route_ping (stream: &mut TcpStream, info: &Remote) -> Result<()> {
 }
 
 // registrira sebe na endpoint /generator/, centralnega strežnika 
-async fn register(central_server: &Remote, info: &Remote) -> Result<()> {
-    let (reason, status, data) = central_server.post("/generator/", &serde_json::to_vec_pretty(&info)?, None).await?;
+async fn register(register_endpoint: &str, central_server: &Remote, info: &Remote) -> Result<()> {
+    let (reason, status, data) = central_server.post(register_endpoint, &serde_json::to_vec_pretty(&info)?, None).await?;
     if (reason, status) == ("OK".to_owned(), 200) { Ok(()) } else { Err(Error::remote_invalid_response(&central_server.get_url(), &data)) }
 }
 
@@ -43,10 +43,11 @@ async fn register(central_server: &Remote, info: &Remote) -> Result<()> {
 async fn main() -> Result<()> {
 
     let settings = settings::SettingsPonudnik::parse();
+    let register_endpoint = http::helper::remove_if_trailing(&settings.register_endpoint);
 
     let info = Arc::new(Remote::new("Anže Hočevar", &settings.ip.to_string(), settings.port)?);
     let central_server = Arc::new(Remote::new("Centralni strežnik", &settings.centralni_ip.to_string(), settings.centralni_port)?);
-    register(&central_server, &info).await?;
+    register(&register_endpoint, &central_server, &info).await?;
 
     let listener = TcpListener::bind(info.get_url()).await?;
     let manager = Arc::new(RwLock::new(ProviderManager::new(&settings, &info, &central_server)));
@@ -54,11 +55,12 @@ async fn main() -> Result<()> {
     // na vsake tokliko časa posobimo naše remote ponudnike
     { 
         let manager = manager.clone();
+        let register_endpoint = register_endpoint.to_string();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(settings.osvezitveni_cas));
             loop {
                 interval.tick().await;
-                ProviderManager::update_providers(&manager).await.unwrap_or_else(|_| println!("Napaka pri posodabljanju remote providerjev."));
+                ProviderManager::update_providers(&register_endpoint, &manager).await.unwrap_or_else(|_| println!("Napaka pri posodabljanju remote providerjev."));
             }
         });
     }
@@ -73,12 +75,12 @@ async fn main() -> Result<()> {
             match http::read::read_http_request(&mut stream).await {
                 Err(err) => err.send_error(&mut stream).await,
                 Ok((path, data)) => {
-                    let result = match path.as_str() {                        
-                        "/sequence/"    => route_sequence(&mut stream, &manager).await,
-                        "/ping/"        => route_ping(&mut stream, &info).await,
+                    let result = match http::helper::remove_if_trailing(path.as_str()) {                        
+                        "/sequence"    => route_sequence(&mut stream, &manager).await,
+                        "/ping"        => route_ping(&mut stream, &info).await,
                         path      => {
                             if path.starts_with("/sequence/") {
-                                match path.get("/sequence/".len()..path.len()-1) {
+                                match path.get("/sequence/".len()..) {
                                     Some(path) => route_sequence_generic(path, &data, &mut stream, &manager).await,
                                     None => Err(Error::missing_path(path)),
                                 }

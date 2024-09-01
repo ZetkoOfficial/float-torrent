@@ -1,11 +1,15 @@
 # Veljavni endpointi
 
-Noben HTTP request ne sme vsebovati več kot 8 headerjev. 
-Pomembno je tudi, da se vsak endpoint konča z znakom `/`.
+Noben HTTP request ne sme vsebovati več kot 16 headerjev. 
+Če se endpoint konča na znak `/`, je ta končni znak ignoriran (oboje je veljavno).
+
+POZOR: V učilnici in primeru implemenacije sta različni specifikaciji, za to
+na kateri endpoint se naj generator registrirar (na `/generator/` ali `/project/`), preferenco smo dali
+`/project/`, lahko pa to spremenite pri zagonu z `--register-endpoint "/nek_čudni_endpoint"`.
 
 ## Ponudnik
 
-### ```GET /ping/```
+### ```GET /ping```
 Vrne response, ki pove, da je ponudnik še online: 
 ```json
 {
@@ -30,7 +34,7 @@ Vrne response, ki vsebuje signature vseh zaporedij, ki jih ponuja ta ponudnik.
 ]
 ```
 
-### ```POST /sequence/<ime zaporedja>/```
+### ```POST /sequence/<ime zaporedja>```
 Telo POST requesta naj bo oblike:
 ```json
 {
@@ -52,8 +56,8 @@ Telo POST requesta naj bo oblike:
 ```
 ## Centralni strežnik
 
-### ```GET /ping/```
-Vrne response, ki pove, da je centrali strežnik še online: 
+### ```GET /ping```
+Vrne response, ki pove, da je centralni strežnik še online: 
 ```json
 {
   "name": "<ime strežnika>",
@@ -62,9 +66,9 @@ Vrne response, ki pove, da je centrali strežnik še online:
 }
 ```
 
-### ```GET /generator/```
+### ```GET /project/```
 Get request **ne sme** imeti telesa. 
-Vrne response, ki vsebuje podatke o vseh registriranih ponudnikih, ki jih ponuja ta generator.
+Vrne response, ki vsebuje podatke o vseh registriranih generatorjih, ki jih ponuja ta centralni strežnik.
 ```json
 [
   {
@@ -76,7 +80,7 @@ Vrne response, ki vsebuje podatke o vseh registriranih ponudnikih, ki jih ponuja
 ]
 ```
 
-### ```POST /generator/```
+### ```POST /project/```
 Telo POST requesta naj bo oblike:
 ```json
 {

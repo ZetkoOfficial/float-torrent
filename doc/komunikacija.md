@@ -8,6 +8,9 @@ Ponudnik lahko komunicira z drugimi ponudniki, centralnim strežnikom ali uporab
 }
 ```
 
+Pri zagonu ponudnika se ta najprej poskusi registrirati z osrednjim strežnikom z endpointom podanim
+kot argument funckije (zaradi neskladnosti specifikacij). Po defaultu je to endpoint `/project`.
+
 # Branje/pošiljanje HTTP requestov in responsov
 ## Pisanje HTTP
 Naša implementacija piše takole(po vsaki vrstici je `\r\n`):

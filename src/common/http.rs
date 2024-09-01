@@ -1,3 +1,11 @@
+pub mod helper {
+    pub fn remove_if_trailing(str: &str) -> &str {
+        if str.ends_with("/") {
+            &str[..str.len()-1]
+        } else { str }
+    }
+}
+
 pub mod read {
     use std::str::from_utf8;
     use tokio::{io::AsyncReadExt, net::TcpStream};
