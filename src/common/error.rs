@@ -4,7 +4,7 @@ use serde::Serialize;
 use serde_json::json;
 use tokio::{net::TcpStream, time::error::Elapsed};
 
-use crate::common::{http, parse::{parse_helper::Sendable, sequence_provide}};
+use crate::{http, parse::{parse_helper::Sendable, sequence_provide}};
 
 #[derive(Debug, Serialize)]
 #[allow(dead_code)]

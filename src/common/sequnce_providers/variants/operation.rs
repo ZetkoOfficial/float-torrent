@@ -1,4 +1,4 @@
-use crate::common::{
+use crate::{
     error::{Error, Result}, 
     parse::sequence_provide::{self}, 
     sequnce_providers::SequenceProvider
@@ -6,6 +6,7 @@ use crate::common::{
 
 /// Zaporedje, ki ga lahko predstavimo kot neka operacija nad istoležečimi členi drugih zaporedih
 pub trait OperationSequence : Sync + Send {
+    /// Ni potrebno skrbeti za napačno število parametrov ali zaporedij, garaniramo, da se ujema z get_info.
     fn apply(&self, parameters: &[f64], sequences: &[f64]) -> Result<f64>;
     fn get_info(&self) -> sequence_provide::SequenceInfo;
 }
@@ -16,8 +17,14 @@ pub struct OperationSequenceProvider {
 
 impl OperationSequenceProvider {
     fn combine(&self, length: usize, parameters: &[f64], sequences: &[Vec<f64>]) -> Result<Vec<f64>> {
+
+        let info = self.get_info();
+        if info.sequences != sequences.len() || info.parameters != parameters.len() {
+            return Err(Error::sequence_arithmetic_error(self.get_info(), "Število parametrov ali zaporedij je nepravilno."))
+        } 
+
         if !sequences.iter().all(|s| s.len() == length) { 
-            Err(Error::sequence_arithmetic_error(self.get_info(), "Pridobljene dolžine zaporedij se ne ujemajo"))
+            Err(Error::sequence_arithmetic_error(info, "Pridobljene dolžine zaporedij se ne ujemajo"))
         } else {
             let mut result = vec![];
 

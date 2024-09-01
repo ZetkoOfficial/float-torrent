@@ -1,6 +1,6 @@
 use std::vec;
 
-use crate::common::{
+use crate::{
     error::Result, 
     parse::sequence_provide::{self}, 
     sequnce_providers::SequenceProvider

@@ -6,10 +6,13 @@ use rand::seq::SliceRandom;
 use async_trait::async_trait;
 use tokio::sync::RwLock;
 
-use crate::common::{
+use crate::{
     error::{Error, Result}, 
-    parse::{parse_helper::Sendable, remote::Remote, 
-    sequence_provide::{self, SequenceInfo}}
+    parse::{
+        parse_helper::Sendable, remote::Remote, 
+        sequence_provide::{self, SequenceInfo},
+        settings::SettingsPonudnik
+    }
 };
 
 use variants::{function::*, operation::*};
@@ -41,28 +44,36 @@ pub struct ProviderManager {
 }
 
 impl ProviderManager {
-    pub fn new(generator: &Remote, central: &Remote) -> Self {
-        ProviderManager { 
-            local_providers: (vec! [
+    pub fn new(settings: &SettingsPonudnik, generator: &Remote, central: &Remote) -> Self {
+
+        let mut local_providers: Vec<Box<dyn SequenceProvider + Send>> = vec![
                 Box::new(constant::Provider {}),
                 Box::new(drop::Provider {}),
+                Box::new(power_mod::Provider {}),
+                Box::new(p_euler::Provider::new()),
                 Box::new(OperationSequenceProvider::new(Box::new(sum::Sequence {}))),
                 Box::new(OperationSequenceProvider::new(Box::new(prod::Sequence {}))),
                 Box::new(OperationSequenceProvider::new(Box::new(lin_com::Sequence {}))),
                 Box::new(OperationSequenceProvider::new(Box::new(round::Sequence {}))),
+                Box::new(OperationSequenceProvider::new(Box::new(max_seqs::Sequence {}))),
+                Box::new(OperationSequenceProvider::new(Box::new(min_seqs::Sequence {}))),
                 Box::new(FunctionSequenceProvider::new(Box::new(arithmetic::Sequence {}))),
                 Box::new(FunctionSequenceProvider::new(Box::new(geometric::Sequence {}))),
-                Box::new(linear_recursion_h::Provider::new(1)),
-                Box::new(linear_recursion_h::Provider::new(2)),
-                Box::new(linear_recursion_h::Provider::new(3)),
-                Box::new(linear_recursion_h::Provider::new(4)),
-                Box::new(power_mod::Provider {}),
-                Box::new(p_euler::Provider::new()),
-            ]),
+        ];
+
+        if settings.lin_recur_globina > 0 {
+            for i in 1..=settings.lin_recur_globina {
+                local_providers.push(Box::new(linear_recursion_h::Provider::new(i as usize)))
+            }
+        }
+
+        ProviderManager { 
+            local_providers,
             remote_providers: vec![],
             generator: generator.clone(),
             central: central.clone()
         }
+
     }
 
     pub fn find(&self, seq: &SequenceInfo) -> Result<&Box<dyn SequenceProvider + Send>> {

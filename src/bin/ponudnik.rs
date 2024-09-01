@@ -4,7 +4,7 @@ use clap::Parser;
 use tokio::net::TcpListener;
 use tokio::{net::TcpStream, sync::RwLock};
 
-use float_torrent::common::{
+use common::{
     parse::{remote::Remote, sequence_provide, settings}, 
     sequnce_providers::ProviderManager, 
     error::{Error, Result}, 
@@ -46,7 +46,7 @@ async fn main() -> Result<()> {
     register(&central_server, &info).await?;
 
     let listener = TcpListener::bind(info.get_url()).await?;
-    let manager = Arc::new(RwLock::new(ProviderManager::new(&info, &central_server)));
+    let manager = Arc::new(RwLock::new(ProviderManager::new(&settings, &info, &central_server)));
 
     { 
         let manager = manager.clone();

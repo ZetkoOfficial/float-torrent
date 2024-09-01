@@ -3,6 +3,10 @@ name = "float-torrent"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "common"
+path = "src/common/lib.rs"
+
 [dependencies]
 async-trait = "0.1.81"
 automod = "1.0.14"

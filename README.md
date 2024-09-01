@@ -15,6 +15,8 @@ Svoje implementacije zaporedij lahko dodate direktno v definicji funkcije `Provi
 | `drop`               | Naprej zamaknjeno zaporedje |
 | `sum`                | Vsota dveh zaporedij |
 | `prod`               | Produkt dveh zaporedij |
+| `max`                | Maksimum dveh zaporedij |
+| `max`                | Minimum dveh zaporedij |
 | `arithmetic`         | Aritmetično zaporedje |
 | `geometric`          | Geometrijsko zaporedje |
 | `linear_rec_h`       | Linearno rekurzivno zaporedje |

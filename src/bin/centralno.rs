@@ -4,7 +4,7 @@ use std::time::Duration;
 use clap::Parser;
 use tokio::{net::{TcpListener, TcpStream}, sync::RwLock};
 
-use float_torrent::common::{
+use common::{
     parse::{settings, remote::Remote},
     error::{Error, Result},
     http,

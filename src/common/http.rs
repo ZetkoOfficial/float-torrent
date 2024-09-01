@@ -1,7 +1,7 @@
 pub mod read {
     use std::str::from_utf8;
     use tokio::{io::AsyncReadExt, net::TcpStream};
-    use crate::common::error::{Error, Result};
+    use crate::error::{Error, Result};
     
     const MAX_HTTP_LENGTH: usize = 16384;
 
@@ -108,7 +108,7 @@ pub mod read {
 
 pub mod write {
     use tokio::{io::AsyncWriteExt, net::TcpStream};
-    use crate::common::error::Result;
+    use crate::error::Result;
 
     pub async fn write_http(status: &str, data: &[u8], stream: &mut TcpStream) -> Result<()> {
 

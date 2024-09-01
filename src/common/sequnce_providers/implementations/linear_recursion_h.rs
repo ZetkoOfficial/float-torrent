@@ -1,6 +1,6 @@
 use nalgebra::{DMatrix, DVector};
 
-use crate::common::{
+use crate::{
     error::Result, 
     parse::sequence_provide::{self, SequenceInfo}, 
     sequnce_providers::SequenceProvider

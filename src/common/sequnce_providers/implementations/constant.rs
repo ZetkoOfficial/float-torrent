@@ -1,4 +1,4 @@
-use crate::common::{
+use crate::{
     parse::sequence_provide::{self, SequenceInfo}, 
     error::Result,
     sequnce_providers::SequenceProvider

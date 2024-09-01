@@ -22,8 +22,12 @@ pub mod settings {
         pub port:    u16,
 
         /// Želen čas v sekundah, po katerem se ponudnik znova posvetuje z centralnim in pridobi zaporedja, ki jih ponujajo drugi. 
-        #[arg(short, default_value_t=60)]
-        pub osvezitveni_cas:  u64
+        #[arg(long, default_value_t=60)]
+        pub osvezitveni_cas:  u64,
+
+        /// Maksimalna globina, za katero obstajajo zaporedja lin_rec_h
+        #[arg(long, default_value_t=4)]
+        pub lin_recur_globina:  u8
     }
 
     #[derive(Parser, Debug)]
@@ -55,7 +59,7 @@ pub mod remote {
     use tokio::net::TcpStream;
     use tokio::time::timeout;
     
-    use crate::common::{error::{Error, Result}, http};
+    use crate::{error::{Error, Result}, http};
 
     #[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, Eq)]
     pub struct Remote {
@@ -107,7 +111,7 @@ pub mod remote {
 
 pub mod sequence_provide {        
     use serde::{Deserialize, Serialize};
-    use crate::common::{error::Result, error::Error};
+    use crate::{error::Result, error::Error};
     use super::parse_helper::Sendable;
 
     #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
@@ -181,7 +185,7 @@ pub mod sequence_provide {
 }
 
 pub mod parse_helper {
-    use crate::common::error::Result;
+    use crate::error::Result;
 
     pub trait Sendable : serde::Serialize {
         fn as_sendable(&self) -> Result<Vec<u8>> {

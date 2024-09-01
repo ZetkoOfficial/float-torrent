@@ -1,5 +1,5 @@
-use crate::common::{
-    error::{Error, Result}, 
+use crate::{
+    error::Result, 
     parse::sequence_provide::{self}, 
     sequnce_providers::OperationSequence
 };
@@ -17,10 +17,6 @@ impl OperationSequence for Sequence {
     }
 
     fn apply(&self, _parameters: &[f64], sequences: &[f64]) -> Result<f64> {
-        if sequences.len() != 2 {
-            Err(Error::sequence_arithmetic_error(self.get_info(), "Številu parametrov ali zaporedij je nepravilno."))
-        } else {
-            Ok(sequences[0] + sequences[1])
-        }
+        Ok(sequences[0] + sequences[1])
     }
 }
