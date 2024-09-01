@@ -16,6 +16,8 @@ async fn route_ping (stream: &mut TcpStream, info: &Remote) -> Result<()> {
 }
 
 async fn route_generator(stream: &mut TcpStream, registered: &RwLock<HashSet<Remote>>, data: &[u8]) -> Result<()> {
+    // Ločimo med primeroma, ko je body requesta prazen (in želi uporabnik pridobiti registiranje) 
+    // in primerom, ko se želi registrirati
     if data.is_empty() {
         let mut result = vec![];
         {
@@ -45,6 +47,7 @@ async fn main() -> Result<()> {
     let listener = TcpListener::bind(info.get_url()).await?;
     let registered = Arc::new(RwLock::new(HashSet::<Remote>::new()));
 
+    // na vsake toliko časa pingamo vse registriane, če so še aktivni
     { 
         let registered = registered.clone();
         tokio::spawn(async move {
@@ -64,6 +67,7 @@ async fn main() -> Result<()> {
         });
     }
 
+    // skrbimo za prihajajoče requeste
     loop {
         let (mut stream, _addr) = listener.accept().await?;
         let info = info.clone();

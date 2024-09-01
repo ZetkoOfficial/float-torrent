@@ -4,6 +4,10 @@ Projektna naloga za predmet Programiranje II na FMF, ki implementira ponudnik za
 - [O endpointih](doc/endpoint.md)
 - [O komunikaciji](doc/komunikacija.md)
 
+## Zagon in uporaba
+Programa zgradimo z `cargo build --release`, kar generira binary file-a `centralno` in `ponudnik`. Za opcije pri pogonu teh dveh
+programov se posvetujte z ukazoma `centralno --help` in `ponudnik --help`. Ponudnik mora biti zagnan po centralnem strežniku (tudi če uporabljamo kako drugo implementacijo centralnega strežnika).
+
 ## Lokalno implementirana zaporedja
 Lokalno so implementrirana naslednja zaporedja, katerih implmentacie najdete v
 [sequence_providers/implementations/](src/common/sequnce_providers/implementations/).
@@ -16,7 +20,7 @@ Svoje implementacije zaporedij lahko dodate direktno v definicji funkcije `Provi
 | `sum`                | Vsota dveh zaporedij |
 | `prod`               | Produkt dveh zaporedij |
 | `max`                | Maksimum dveh zaporedij |
-| `max`                | Minimum dveh zaporedij |
+| `min`                | Minimum dveh zaporedij |
 | `arithmetic`         | Aritmetično zaporedje |
 | `geometric`          | Geometrijsko zaporedje |
 | `linear_rec_h`       | Linearno rekurzivno zaporedje |

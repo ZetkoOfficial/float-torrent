@@ -18,11 +18,15 @@ use crate::{
 use variants::{function::*, operation::*};
 use implementations::*;
 
+/// Ponudnik neke vrste zaporedja
 #[async_trait]
 pub trait SequenceProvider : Sync {
+    /// Vrne informacije o zaporedju
     fn get_info(&self) -> sequence_provide::SequenceInfo;
+    /// Generira zaporedje iz delov
     fn generate(&self, range: sequence_provide::Range, parameters: &[f64], sequences: &[Vec<f64>]) -> Result<Vec<f64>>;
 
+    /// Najprej pridobi potrebna zaporedja in potem pokliče generate, da združi v eno
     async fn provide(&self, request: sequence_provide::Request, manager: &RwLock<ProviderManager>) -> Result<Vec<f64>> {
         let mut sequences = vec![];
         for seq in &request.sequences {
@@ -36,6 +40,7 @@ pub trait SequenceProvider : Sync {
         self.generate(request.range, &request.parameters, &sequences)
     }
 }
+/// Struktura, ki hrani vse ponudnike zaporedij
 pub struct ProviderManager {
     pub local_providers:    Vec<Box<dyn SequenceProvider + Send>>,
     remote_providers:   Vec<Box<dyn SequenceProvider + Send>>,
@@ -76,6 +81,7 @@ impl ProviderManager {
 
     }
 
+    /// Najde ponudnika, ki ponuja zaporedje z podano signaturo
     pub fn find(&self, seq: &SequenceInfo) -> Result<&Box<dyn SequenceProvider + Send>> {
         let mut close = vec![];
         
@@ -102,6 +108,7 @@ impl ProviderManager {
         self.local_providers.iter().map(|p| p.get_info()).collect()
     }
 
+    /// Pridobi ponudnike vseh zaporedij, ki jih ponuja nek Remote 
     async fn get_remote_sequence_providers(remote: &Remote) -> Result<Vec<Box<dyn SequenceProvider + Send>>> {
         let mut result: Vec<Box<dyn SequenceProvider + Send>> = vec![];
         let (reason, status, data) = remote.get("/sequence/", None).await?;
@@ -117,6 +124,7 @@ impl ProviderManager {
         } else { Err(Error::remote_invalid_response(&remote.get_url(), &data)) }
     }
 
+    /// Posodobi vse oddaljene ponudnike zaporedij
     pub async fn update_providers(manager: &RwLock<Self>) -> Result<()> {
         let generator = manager.read().await.generator.clone();
         let central_server = manager.read().await.central.clone();      
@@ -143,6 +151,7 @@ impl ProviderManager {
 
 // ---------- implementacije posebnega primera za oddaljene ponudnike ----------
 
+/// Ponudnik zaporedja, ki ga ponuja nek Remote
 struct RemoteSequenceProvider {
     host:   Remote,
     info:   SequenceInfo

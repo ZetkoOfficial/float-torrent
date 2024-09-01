@@ -1,3 +1,6 @@
+/// Tukaj definiramo tip Result in Error, ki ga uporabljamo povsod, in 
+/// zapišemo pretvorbe med tipi Error
+
 use std::{io, net::AddrParseError, num::{ParseIntError, TryFromIntError}, result, str::Utf8Error};
 
 use serde::Serialize;

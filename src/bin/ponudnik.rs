@@ -11,6 +11,7 @@ use common::{
     http
 };
 
+// če je mogoče vrne generirano zaporedje z iskano signaturo
 async fn route_sequence_generic(path: &str, data: &[u8], stream: &mut TcpStream, manager: &RwLock<ProviderManager>) -> Result<()> {
     let request = sequence_provide::parse_request(&data)?;
     
@@ -21,6 +22,7 @@ async fn route_sequence_generic(path: &str, data: &[u8], stream: &mut TcpStream,
     http::write::write_http("200 OK", &serde_json::to_vec_pretty(&result)?, stream).await
 }
 
+// vrne seznam zaporedij
 async fn route_sequence(stream: &mut TcpStream, manager: &RwLock<ProviderManager>) -> Result<()> {
     let data: Vec<u8> = serde_json::to_vec_pretty(&manager.read().await.get_info())?;
     http::write::write_http("200 OK", &data, stream).await
@@ -31,6 +33,7 @@ async fn route_ping (stream: &mut TcpStream, info: &Remote) -> Result<()> {
     http::write::write_http("200 OK", &data, stream).await
 }
 
+// registrira sebe na endpoint /generator/, centralnega strežnika 
 async fn register(central_server: &Remote, info: &Remote) -> Result<()> {
     let (reason, status, data) = central_server.post("/generator/", &serde_json::to_vec_pretty(&info)?, None).await?;
     if (reason, status) == ("OK".to_owned(), 200) { Ok(()) } else { Err(Error::remote_invalid_response(&central_server.get_url(), &data)) }
@@ -48,6 +51,7 @@ async fn main() -> Result<()> {
     let listener = TcpListener::bind(info.get_url()).await?;
     let manager = Arc::new(RwLock::new(ProviderManager::new(&settings, &info, &central_server)));
 
+    // na vsake tokliko časa posobimo naše remote ponudnike
     { 
         let manager = manager.clone();
         tokio::spawn(async move {
@@ -59,6 +63,7 @@ async fn main() -> Result<()> {
         });
     }
 
+    // sprejemamo requeste tukaj
     loop {
         let (mut stream, _addr) = listener.accept().await?;
         let manager = manager.clone();
